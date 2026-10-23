@@ -45,7 +45,8 @@ Retro_Games/
 │   ├── emulator_core/         # 🧠 Motores nativos C (SNES y Mega Drive)
 │   ├── ui/                    # 🎨 Menús, selector de sistema y juego
 │   └── core/                  # 🎛️ Gestores de entrada, sistemas y sonido
-└── assets/                    # 📦 Fuentes, sonidos retro e iconos
+└── assets/                    # 📦 Fuentes, sonidos retro, iconos y capturas
+    └── screenshots/           # 📸 Capturas de pantalla de la interfaz
 ```
 
 ---

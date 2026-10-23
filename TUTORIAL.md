@@ -80,7 +80,8 @@ Retro_Games/
 │   ├── ui/                    # 🎨 Menús, visor de cartuchos, controles y juego
 │   └── core/                  # 🎛️ Gestores de entrada, sistemas y sonido
 │
-└── assets/                    # 📦 Tipografía pixel, sonidos e iconos
+└── assets/                    # 📦 Tipografía pixel, sonidos, iconos y capturas
+    └── screenshots/           # 📸 Capturas de pantalla de la interfaz
 ```
 
 ---
