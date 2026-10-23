@@ -300,7 +300,7 @@ body.theme-megadrive .grid-plane {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   background: #000;
-  display: none;
+  display: block;
 }
 
 /* Welcome & Launcher Overlay inside CRT */

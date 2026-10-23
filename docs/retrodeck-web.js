@@ -24,6 +24,12 @@
   const fileInput = document.getElementById('file-input');
   const toast = document.getElementById('retro-toast');
 
+  // Status Modal Elements
+  const statusOverlay = document.getElementById('status-overlay');
+  const statusTitle = document.getElementById('status-title');
+  const statusDesc = document.getElementById('status-desc');
+  const btnStatusDismiss = document.getElementById('btn-status-dismiss');
+
   const btnSnes = document.getElementById('tab-snes');
   const btnMd = document.getElementById('tab-megadrive');
   const systemBadge = document.getElementById('system-badge');
@@ -48,6 +54,13 @@
     setupGamepadListener();
     setupControls();
     setupDemos();
+
+    if (btnStatusDismiss) {
+      btnStatusDismiss.addEventListener('click', () => {
+        hideStatus();
+        ejectRom(true);
+      });
+    }
   }
 
   // 1. Starfield Background
@@ -65,6 +78,25 @@
       star.style.animationDelay = `${Math.random() * 3}s`;
       star.style.animationDuration = `${Math.random() * 2 + 1.5}s`;
       starfield.appendChild(star);
+    }
+  }
+
+  // Status Overlay Handlers
+  function showStatus(title, desc, isError = false) {
+    if (!statusOverlay) return;
+    statusTitle.textContent = title;
+    statusTitle.style.color = isError ? '#ef4444' : 'var(--gold)';
+    statusDesc.textContent = desc;
+    statusOverlay.style.borderColor = isError ? '#ef4444' : 'var(--accent-color)';
+    statusOverlay.style.display = 'block';
+    if (btnStatusDismiss) {
+      btnStatusDismiss.style.display = isError ? 'inline-block' : 'none';
+    }
+  }
+
+  function hideStatus() {
+    if (statusOverlay) {
+      statusOverlay.style.display = 'none';
     }
   }
 
@@ -146,7 +178,7 @@
       coreName = currentSystem === 'megadrive' ? 'genesis_plus_gx' : 'snes9x';
     }
 
-    showToast(`⚡ Preparando núcleo ${coreName.toUpperCase()}...`);
+    showStatus('CARGANDO JUEGO', `Descargando núcleo WebAssembly (${coreName.toUpperCase()}) para ${filename}...`, false);
 
     // Clean up previous instance
     if (nostalgistInstance) {
@@ -161,7 +193,7 @@
     // Verify Nostalgist is available
     const ready = await ensureNostalgist();
     if (!ready) {
-      showToast('❌ Error: No se pudo cargar el motor WebAssembly. Revisa tu conexión a internet.', 5000);
+      showStatus('❌ ERROR DE CONEXIÓN', 'No se pudo cargar el motor WebAssembly de Nostalgist. Revisa tu conexión a internet o posibles extensiones bloqueadoras.', true);
       return;
     }
 
@@ -175,6 +207,7 @@
     canvas.style.height = '100%';
     canvas.style.objectFit = 'contain';
     canvas.style.imageRendering = 'pixelated';
+    canvas.style.display = 'block';
     emulatorContainer.appendChild(canvas);
 
     overlay.classList.add('hidden');
@@ -190,13 +223,14 @@
         element: canvas
       });
 
+      hideStatus();
       isPaused = false;
       btnPause.textContent = '⏸ PAUSAR';
       showToast(`▶ Jugando: ${filename} (60 FPS)`, 4000);
     } catch (err) {
       console.error('[RetroDeck Web Error]', err);
-      ejectRom(true); // silent = true
-      showToast(`❌ Error al cargar ROM: ${err.message || err}`, 5000);
+      emulatorContainer.style.display = 'none';
+      showStatus('❌ ERROR AL INICIAR EMULACIÓN', (err && err.message) || String(err), true);
     }
   }
 
@@ -244,6 +278,16 @@
     dropzone.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        launchRom(file, file.name);
+      }
+    });
+
+    // Also support dropping anywhere on the window
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         launchRom(file, file.name);
@@ -380,6 +424,7 @@
     }
     emulatorContainer.style.display = 'none';
     overlay.classList.remove('hidden');
+    hideStatus();
     if (!silent) {
       showToast('Cartucho expulsado. Volviendo al menú principal.');
     }

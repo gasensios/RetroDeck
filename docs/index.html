@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RetroDeck - Emulador Retro WebAssembly (SNES & Sega Mega Drive)</title>
   <link rel="icon" type="image/png" href="assets/img/icon.png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.3">
 </head>
 <body>
   <!-- Background Synthwave Horizon -->
@@ -66,6 +66,13 @@
       <div class="crt-viewport" id="crt-viewport">
         <div class="crt-scanlines"></div>
         <div class="crt-vignette"></div>
+
+        <!-- Status & Error Overlay inside CRT -->
+        <div id="status-overlay" style="display: none; position: absolute; z-index: 60; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #141124; border: 2px solid var(--accent-color); padding: 18px; text-align: center; max-width: 85%; box-shadow: 0 0 25px rgba(0,0,0,0.9);">
+          <div id="status-title" style="color: var(--gold); font-size: 10px; margin-bottom: 8px;">CARGANDO...</div>
+          <div id="status-desc" style="color: #fff; font-size: 8px; line-height: 1.6; margin-bottom: 12px; word-break: break-word;"></div>
+          <button class="retro-btn" id="btn-status-dismiss" style="display: none;">VOLVER AL MENÚ</button>
+        </div>
 
         <!-- Emulation Canvas Container -->
         <div id="emulator-container" style="width: 100%; height: 100%; display: none; align-items: center; justify-content: center; z-index: 5;">
@@ -147,6 +154,6 @@
 
   <!-- WebAssembly Retro Core Loader -->
   <script src="https://cdn.jsdelivr.net/npm/nostalgist/dist/nostalgist.umd.js"></script>
-  <script src="retrodeck-web.js"></script>
+  <script src="retrodeck-web.js?v=2.3"></script>
 </body>
 </html>
