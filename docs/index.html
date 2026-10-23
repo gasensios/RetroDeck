@@ -67,8 +67,10 @@
         <div class="crt-scanlines"></div>
         <div class="crt-vignette"></div>
 
-        <!-- Emulation Canvas -->
-        <canvas id="emulator-canvas" width="512" height="480"></canvas>
+        <!-- Emulation Canvas Container -->
+        <div id="emulator-container" style="width: 100%; height: 100%; display: none; align-items: center; justify-content: center; z-index: 5;">
+          <canvas id="emulator-canvas" width="512" height="480"></canvas>
+        </div>
 
         <!-- Initial CRT Launcher Overlay -->
         <div class="crt-overlay" id="crt-overlay">

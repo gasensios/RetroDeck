@@ -17,7 +17,7 @@
   // DOM Elements
   const body = document.body;
   const starfield = document.getElementById('starfield');
-  const canvas = document.getElementById('emulator-canvas');
+  const emulatorContainer = document.getElementById('emulator-container');
   const overlay = document.getElementById('crt-overlay');
   const crtViewport = document.getElementById('crt-viewport');
   const dropzone = document.getElementById('dropzone');
@@ -28,7 +28,6 @@
   const btnMd = document.getElementById('tab-megadrive');
   const systemBadge = document.getElementById('system-badge');
   const cartLabel = document.getElementById('cart-label');
-  const cartBox = document.getElementById('cart-box');
 
   const btnPause = document.getElementById('btn-pause');
   const btnSave = document.getElementById('btn-save');
@@ -51,7 +50,7 @@
     setupDemos();
   }
 
-  // 1. Starfield
+  // 1. Starfield Background
   function createStarfield() {
     if (!starfield) return;
     const numStars = 65;
@@ -78,6 +77,19 @@
     toast._timeout = setTimeout(() => {
       toast.classList.remove('show');
     }, duration);
+  }
+
+  // Helper to ensure Nostalgist library is loaded
+  async function ensureNostalgist() {
+    if (typeof Nostalgist !== 'undefined') return true;
+    return new Promise((resolve) => {
+      console.log('[RetroDeck Web] Cargando fallback de Nostalgist desde unpkg...');
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/nostalgist/dist/nostalgist.umd.js';
+      script.onload = () => resolve(typeof Nostalgist !== 'undefined');
+      script.onerror = () => resolve(false);
+      document.head.appendChild(script);
+    });
   }
 
   // 2. System Tabs
@@ -119,9 +131,10 @@
   // 4. Emulator Launch using WebAssembly Nostalgist
   async function launchRom(fileOrBlob, filename = 'Juego') {
     currentRomName = filename;
-    const ext = filename.split('.').pop().toLowerCase();
+    const parts = filename.split('.');
+    const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
     
-    // Choose core
+    // Determine core based on extension and active system
     let coreName = 'snes9x';
     if (['bin', 'gen', 'md', 'smd'].includes(ext)) {
       coreName = 'genesis_plus_gx';
@@ -133,46 +146,57 @@
       coreName = currentSystem === 'megadrive' ? 'genesis_plus_gx' : 'snes9x';
     }
 
-    showToast(`⚡ Iniciando ${filename} en WebAssembly...`);
+    showToast(`⚡ Preparando núcleo ${coreName.toUpperCase()}...`);
 
-    // Stop previous instance if running
+    // Clean up previous instance
     if (nostalgistInstance) {
       try {
         await nostalgistInstance.exit();
       } catch (e) {
-        console.warn('Error al salir de instancia previa:', e);
+        console.warn('Error al desmontar emulador previo:', e);
       }
       nostalgistInstance = null;
     }
 
-    // Switch view
+    // Verify Nostalgist is available
+    const ready = await ensureNostalgist();
+    if (!ready) {
+      showToast('❌ Error: No se pudo cargar el motor WebAssembly. Revisa tu conexión a internet.', 5000);
+      return;
+    }
+
+    // Prepare fresh canvas inside container
+    emulatorContainer.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    canvas.id = 'emulator-canvas';
+    canvas.width = 512;
+    canvas.height = 480;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.objectFit = 'contain';
+    canvas.style.imageRendering = 'pixelated';
+    emulatorContainer.appendChild(canvas);
+
     overlay.classList.add('hidden');
-    canvas.style.display = 'block';
+    emulatorContainer.style.display = 'flex';
 
     try {
-      if (typeof Nostalgist === 'undefined') {
-        throw new Error('Nostalgist WebAssembly loader no está listo todavía.');
-      }
+      console.log(`[RetroDeck Web] Lanzando ${filename} con núcleo: ${coreName}`);
 
+      // Launch with official default Nostalgist core resolvers
       nostalgistInstance = await Nostalgist.launch({
         core: coreName,
         rom: fileOrBlob,
-        element: canvas,
-        resolveCoreJs(core) {
-          return `https://cdn.jsdelivr.net/npm/nostalgist/dist/cores/${core}_libretro.js`;
-        },
-        resolveCoreWasm(core) {
-          return `https://cdn.jsdelivr.net/npm/nostalgist/dist/cores/${core}_libretro.wasm`;
-        }
+        element: canvas
       });
 
       isPaused = false;
       btnPause.textContent = '⏸ PAUSAR';
-      showToast(`▶ Jugando: ${filename} (60 FPS)`);
+      showToast(`▶ Jugando: ${filename} (60 FPS)`, 4000);
     } catch (err) {
-      console.error('Error al cargar emulador WebAssembly:', err);
-      showToast(`❌ Error al cargar ROM: ${err.message}`, 4000);
-      ejectRom();
+      console.error('[RetroDeck Web Error]', err);
+      ejectRom(true); // silent = true
+      showToast(`❌ Error al cargar ROM: ${err.message || err}`, 5000);
     }
   }
 
@@ -181,37 +205,49 @@
     dropzone.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) launchRom(file, file.name);
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        launchRom(file, file.name);
+        fileInput.value = '';
+      }
     });
 
     ['dragenter', 'dragover'].forEach((eventName) => {
       dropzone.addEventListener(eventName, (e) => {
         e.preventDefault();
+        e.stopPropagation();
         dropzone.classList.add('dragover');
       });
       crtViewport.addEventListener(eventName, (e) => {
         e.preventDefault();
+        e.stopPropagation();
       });
     });
 
     ['dragleave', 'drop'].forEach((eventName) => {
       dropzone.addEventListener(eventName, (e) => {
         e.preventDefault();
+        e.stopPropagation();
         dropzone.classList.remove('dragover');
       });
     });
 
     crtViewport.addEventListener('drop', (e) => {
       e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file) launchRom(file, file.name);
+      e.stopPropagation();
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        launchRom(file, file.name);
+      }
     });
 
     dropzone.addEventListener('drop', (e) => {
       e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file) launchRom(file, file.name);
+      e.stopPropagation();
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        launchRom(file, file.name);
+      }
     });
   }
 
@@ -222,10 +258,11 @@
         try {
           showToast('Descargando demo SNES: Astrohawk...');
           const resp = await fetch('assets/demos/Astrohawk.smc');
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const blob = await resp.blob();
-          launchRom(blob, 'Astrohawk (SNES)');
+          launchRom(blob, 'Astrohawk (SNES).smc');
         } catch (e) {
-          showToast('No se pudo cargar la demo local: ' + e.message);
+          showToast('Error al cargar demo SNES: ' + e.message, 4000);
         }
       });
     }
@@ -235,10 +272,11 @@
         try {
           showToast('Descargando demo Mega Drive: BombX...');
           const resp = await fetch('assets/demos/BombX.bin');
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const blob = await resp.blob();
-          launchRom(blob, 'BombX (Mega Drive)');
+          launchRom(blob, 'BombX (Mega Drive).bin');
         } catch (e) {
-          showToast('No se pudo cargar la demo local: ' + e.message);
+          showToast('Error al cargar demo Mega Drive: ' + e.message, 4000);
         }
       });
     }
@@ -330,19 +368,21 @@
     });
 
     // Eject / Back to Menu
-    btnEject.addEventListener('click', () => ejectRom());
+    btnEject.addEventListener('click', () => ejectRom(false));
   }
 
-  function ejectRom() {
+  function ejectRom(silent = false) {
     if (nostalgistInstance) {
       try {
         nostalgistInstance.exit();
       } catch (e) {}
       nostalgistInstance = null;
     }
-    canvas.style.display = 'none';
+    emulatorContainer.style.display = 'none';
     overlay.classList.remove('hidden');
-    showToast('Cartucho expulsado. Volviendo al menú principal.');
+    if (!silent) {
+      showToast('Cartucho expulsado. Volviendo al menú principal.');
+    }
   }
 
   // Keyboard Shortcuts (F5 = Save, F7 = Load, F11 = Fullscreen, ESC = Pause)
