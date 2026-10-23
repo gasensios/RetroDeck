@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RetroDeck - Emulador Retro WebAssembly (SNES & Sega Mega Drive)</title>
+  <link rel="icon" type="image/png" href="assets/img/icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Synthwave Horizon -->
+  <div class="synthwave-bg">
+    <div class="starfield" id="starfield"></div>
+    <div class="grid-plane"></div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <!-- Header Arcade Chassis -->
+    <header class="arcade-header">
+      <div class="rivet top-left"></div>
+      <div class="rivet top-right"></div>
+      <div class="rivet bottom-left"></div>
+      <div class="rivet bottom-right"></div>
+
+      <div class="brand-title">
+        <h1 class="brand-logo">RETRODECK</h1>
+        <span class="brand-badge" id="system-badge">SUPER NINTENDO 16-BIT</span>
+      </div>
+
+      <!-- Hardware LEDs -->
+      <div class="hardware-leds">
+        <div class="led-indicator">
+          <span class="led-light led-green"></span>
+          <span>POWER ON</span>
+        </div>
+        <div class="led-indicator">
+          <span class="led-light led-yellow"></span>
+          <span>60Hz NTSC</span>
+        </div>
+        <div class="led-indicator">
+          <span class="led-light led-cyan"></span>
+          <span>STEREO</span>
+        </div>
+      </div>
+
+      <!-- System Selector Tabs -->
+      <nav class="system-tabs">
+        <button class="system-btn active" id="tab-snes">
+          <span>★</span> SNES
+        </button>
+        <button class="system-btn" id="tab-megadrive">
+          <span>★</span> MEGA DRIVE
+        </button>
+      </nav>
+    </header>
+
+    <!-- Main Cabinet Screen -->
+    <main class="main-cabinet">
+      <div class="rivet top-left"></div>
+      <div class="rivet top-right"></div>
+      <div class="rivet bottom-left"></div>
+      <div class="rivet bottom-right"></div>
+
+      <!-- CRT Viewport -->
+      <div class="crt-viewport" id="crt-viewport">
+        <div class="crt-scanlines"></div>
+        <div class="crt-vignette"></div>
+
+        <!-- Emulation Canvas -->
+        <canvas id="emulator-canvas" width="512" height="480"></canvas>
+
+        <!-- Initial CRT Launcher Overlay -->
+        <div class="crt-overlay" id="crt-overlay">
+          <!-- 3D Cartridge Display -->
+          <div class="cart-showcase">
+            <div class="cart-box" id="cart-box">
+              <div class="cart-label" id="cart-label">
+                <span class="cart-label-text">SUPER NINTENDO<br>INSERT COIN</span>
+              </div>
+            </div>
+            <div class="cart-bottom-slot"></div>
+          </div>
+
+          <!-- Drag and Drop ROM Loader -->
+          <div class="dropzone" id="dropzone">
+            <div class="dropzone-title">📁 ARRASTRA TU ROM AQUÍ</div>
+            <div class="dropzone-sub">Soporta .smc, .sfc (SNES) y .bin, .gen, .md (Mega Drive)</div>
+            <div class="dropzone-sub" style="margin-top: 4px; color: var(--gold);">(O haz clic para examinar archivos)</div>
+          </div>
+          <input type="file" id="file-input" style="display: none;" accept=".smc,.sfc,.fig,.bin,.gen,.md,.smd,.zip">
+
+          <!-- Ready-to-play Homebrew Demos -->
+          <div class="demos-container">
+            <button class="retro-btn" id="btn-demo-snes">
+              ▶ JUGAR DEMO: ASTROHAWK (SNES)
+            </button>
+            <button class="retro-btn" id="btn-demo-md">
+              ▶ JUGAR DEMO: BOMBX (MEGA DRIVE)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arcade Control Bar -->
+      <div class="arcade-controls">
+        <div class="control-group">
+          <button class="hud-btn" id="btn-pause">⏸ PAUSAR</button>
+          <button class="hud-btn" id="btn-save">💾 GUARDAR [F5]</button>
+          <button class="hud-btn" id="btn-load">⚡ CARGAR [F7]</button>
+        </div>
+
+        <div class="control-group">
+          <button class="hud-btn active" id="btn-crt">📺 FILTRO CRT</button>
+          <button class="hud-btn" id="btn-mute">🔊 AUDIO</button>
+          <button class="hud-btn" id="btn-fullscreen">⛶ PANTALLA COMPLETA</button>
+          <button class="hud-btn" id="btn-eject" style="color: #ef4444; border-color: #ef4444;">⏏ CAMBIAR ROM</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Cheatsheet & Credits Footer -->
+    <footer class="arcade-footer">
+      <div class="footer-col">
+        <strong>⌨️ CONTROLES POR TECLADO</strong>
+        <div>• D-PAD: Flechas de dirección (Arriba, Abajo, Izquierda, Derecha)</div>
+        <div>• SNES: Z (B), X (A), A (Y), S (X), Q (L), W (R)</div>
+        <div>• MEGA DRIVE: A (A), S (B), D (C), Q (X), W (Y), E (Z)</div>
+        <div>• CONTROL: Enter (Start) | Shift Derecho (Select / Mode)</div>
+      </div>
+      <div class="footer-col">
+        <strong>🎮 COMPATIBILIDAD CON MANDOS</strong>
+        <div>Conecta cualquier mando USB o Bluetooth (Xbox, PlayStation, 8BitDo). Se detectará automáticamente mediante la Web Gamepad API.</div>
+        <div style="margin-top: 8px;">
+          <a href="https://github.com/gasensios/RetroDeck" target="_blank" class="github-badge">
+            ⭐ Código fuente en GitHub: gasensios/RetroDeck
+          </a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="retro-toast" id="retro-toast"></div>
+
+  <!-- WebAssembly Retro Core Loader -->
+  <script src="https://cdn.jsdelivr.net/npm/nostalgist/dist/nostalgist.umd.js"></script>
+  <script src="retrodeck-web.js"></script>
+</body>
+</html>

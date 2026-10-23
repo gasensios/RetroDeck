@@ -1,0 +1,10 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=RetroDeck
+Comment=Emulador Multi-Sistema Retro para Linux (SNES & Mega Drive)
+Exec=/home/gasensio/Documentos/Retro_Games/RetroDeck.sh
+Icon=/home/gasensio/Documentos/Retro_Games/assets/icon.png
+Terminal=false
+Type=Application
+Categories=Game;Emulator;
+StartupNotify=true

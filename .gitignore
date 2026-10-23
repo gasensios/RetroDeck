@@ -1,0 +1,54 @@
+# ====================================================================
+# Archivos y carpetas ignorados para RetroDeck
+# Protege contra subidas accidentales de contenido con derechos de autor
+# ====================================================================
+
+# 1. ROMs y juegos comerciales (Fundamental para cumplimiento legal)
+roms/snes/*
+!roms/snes/.gitkeep
+roms/megadrive/*
+!roms/megadrive/.gitkeep
+
+# 2. Carátulas oficiales (Boxart con copyright)
+boxart/snes/*
+!boxart/snes/.gitkeep
+boxart/megadrive/*
+!boxart/megadrive/.gitkeep
+
+# 3. Partidas guardadas (Batería SRAM y volcados de RAM de juegos)
+saves/snes/*
+!saves/snes/.gitkeep
+saves/megadrive/*
+!saves/megadrive/.gitkeep
+
+# 4. Estados rápidos (Savestates y capturas de memoria)
+states/snes/*
+!states/snes/.gitkeep
+states/megadrive/*
+!states/megadrive/.gitkeep
+
+# 5. Ajustes y estadísticas de usuario local
+config/settings.json
+config/gamelist_cache.json
+
+# 6. Entorno virtual de Python y cachés de compilación
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# 7. Binarios compilados compartidos (se generan con 'make -C src/emulator_core')
+src/emulator_core/*.so
+*.so
+*.o
+*.a
+
+# 8. Archivos del sistema operativo y del editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
