@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RetroDeck - Emulador Retro WebAssembly (SNES & Sega Mega Drive)</title>
   <link rel="icon" type="image/png" href="assets/img/icon.png">
-  <link rel="stylesheet" href="style.css?v=2.3">
+  <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body>
   <!-- Background Synthwave Horizon -->
@@ -74,9 +74,9 @@
           <button class="retro-btn" id="btn-status-dismiss" style="display: none;">VOLVER AL MENÚ</button>
         </div>
 
-        <!-- Emulation Canvas Container -->
-        <div id="emulator-container" style="width: 100%; height: 100%; display: none; align-items: center; justify-content: center; z-index: 5;">
-          <canvas id="emulator-canvas" width="512" height="480"></canvas>
+        <!-- Emulation Game Container -->
+        <div id="emulator-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: none; z-index: 10;">
+          <div id="game" style="width: 100%; height: 100%;"></div>
         </div>
 
         <!-- Initial CRT Launcher Overlay -->
@@ -112,19 +112,10 @@
       </div>
 
       <!-- Arcade Control Bar -->
-      <div class="arcade-controls">
-        <div class="control-group">
-          <button class="hud-btn" id="btn-pause">⏸ PAUSAR</button>
-          <button class="hud-btn" id="btn-save">💾 GUARDAR [F5]</button>
-          <button class="hud-btn" id="btn-load">⚡ CARGAR [F7]</button>
-        </div>
-
-        <div class="control-group">
-          <button class="hud-btn active" id="btn-crt">📺 FILTRO CRT</button>
-          <button class="hud-btn" id="btn-mute">🔊 AUDIO</button>
-          <button class="hud-btn" id="btn-fullscreen">⛶ PANTALLA COMPLETA</button>
-          <button class="hud-btn" id="btn-eject" style="color: #ef4444; border-color: #ef4444;">⏏ CAMBIAR ROM</button>
-        </div>
+      <div class="arcade-controls" style="justify-content: center; gap: 16px;">
+        <button class="hud-btn active" id="btn-crt">📺 FILTRO CRT [ON/OFF]</button>
+        <button class="hud-btn" id="btn-fullscreen">⛶ PANTALLA COMPLETA</button>
+        <button class="hud-btn" id="btn-eject" style="color: #ef4444; border-color: #ef4444;">⏏ CAMBIAR ROM / EXPULSAR</button>
       </div>
     </main>
 
@@ -152,8 +143,7 @@
   <!-- Notification Toast -->
   <div class="retro-toast" id="retro-toast"></div>
 
-  <!-- WebAssembly Retro Core Loader -->
-  <script src="https://cdn.jsdelivr.net/npm/nostalgist/dist/nostalgist.umd.js"></script>
-  <script src="retrodeck-web.js?v=2.3"></script>
+  <!-- RetroDeck Web Engine -->
+  <script src="retrodeck-web.js?v=3.0"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 /**
- * RetroDeck Web - WebAssembly Retro Player for GitHub Pages
+ * RetroDeck Web - WebAssembly Retro Player for GitHub Pages (v3.0)
+ * Uses high-performance WebAssembly cores (Snes9x & Genesis Plus GX via EmulatorJS)
  * User: https://github.com/gasensios
  */
 
@@ -8,11 +9,8 @@
 
   // State
   let currentSystem = 'snes'; // 'snes' or 'megadrive'
-  let nostalgistInstance = null;
   let isCrtEnabled = true;
-  let isPaused = false;
-  let isMuted = false;
-  let currentRomName = '';
+  let isLoading = false;
 
   // DOM Elements
   const body = document.body;
@@ -24,22 +22,12 @@
   const fileInput = document.getElementById('file-input');
   const toast = document.getElementById('retro-toast');
 
-  // Status Modal Elements
-  const statusOverlay = document.getElementById('status-overlay');
-  const statusTitle = document.getElementById('status-title');
-  const statusDesc = document.getElementById('status-desc');
-  const btnStatusDismiss = document.getElementById('btn-status-dismiss');
-
   const btnSnes = document.getElementById('tab-snes');
   const btnMd = document.getElementById('tab-megadrive');
   const systemBadge = document.getElementById('system-badge');
   const cartLabel = document.getElementById('cart-label');
 
-  const btnPause = document.getElementById('btn-pause');
-  const btnSave = document.getElementById('btn-save');
-  const btnLoad = document.getElementById('btn-load');
   const btnCrt = document.getElementById('btn-crt');
-  const btnMute = document.getElementById('btn-mute');
   const btnFullscreen = document.getElementById('btn-fullscreen');
   const btnEject = document.getElementById('btn-eject');
 
@@ -51,16 +39,8 @@
     createStarfield();
     setupSystemTabs();
     setupDragAndDrop();
-    setupGamepadListener();
     setupControls();
     setupDemos();
-
-    if (btnStatusDismiss) {
-      btnStatusDismiss.addEventListener('click', () => {
-        hideStatus();
-        ejectRom(true);
-      });
-    }
   }
 
   // 1. Starfield Background
@@ -81,25 +61,6 @@
     }
   }
 
-  // Status Overlay Handlers
-  function showStatus(title, desc, isError = false) {
-    if (!statusOverlay) return;
-    statusTitle.textContent = title;
-    statusTitle.style.color = isError ? '#ef4444' : 'var(--gold)';
-    statusDesc.textContent = desc;
-    statusOverlay.style.borderColor = isError ? '#ef4444' : 'var(--accent-color)';
-    statusOverlay.style.display = 'block';
-    if (btnStatusDismiss) {
-      btnStatusDismiss.style.display = isError ? 'inline-block' : 'none';
-    }
-  }
-
-  function hideStatus() {
-    if (statusOverlay) {
-      statusOverlay.style.display = 'none';
-    }
-  }
-
   // Toast Notification
   function showToast(message, duration = 3000) {
     if (!toast) return;
@@ -109,19 +70,6 @@
     toast._timeout = setTimeout(() => {
       toast.classList.remove('show');
     }, duration);
-  }
-
-  // Helper to ensure Nostalgist library is loaded
-  async function ensureNostalgist() {
-    if (typeof Nostalgist !== 'undefined') return true;
-    return new Promise((resolve) => {
-      console.log('[RetroDeck Web] Cargando fallback de Nostalgist desde unpkg...');
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/nostalgist/dist/nostalgist.umd.js';
-      script.onload = () => resolve(typeof Nostalgist !== 'undefined');
-      script.onerror = () => resolve(false);
-      document.head.appendChild(script);
-    });
   }
 
   // 2. System Tabs
@@ -149,92 +97,76 @@
     btnMd.addEventListener('click', () => setSystem('megadrive'));
   }
 
-  // 3. Gamepad Detection
-  function setupGamepadListener() {
-    window.addEventListener('gamepadconnected', (e) => {
-      const pad = e.gamepad;
-      showToast(`🎮 Mando detectado: ${pad.id.slice(0, 24)}...`);
-    });
-    window.addEventListener('gamepaddisconnected', () => {
-      showToast('⚠️ Mando desconectado');
-    });
-  }
+  // 3. Emulator Launch using WebAssembly EmulatorJS
+  function launchRom(fileOrUrl, filename = 'Juego') {
+    if (isLoading) return;
+    isLoading = true;
 
-  // 4. Emulator Launch using WebAssembly Nostalgist
-  async function launchRom(fileOrBlob, filename = 'Juego') {
-    currentRomName = filename;
+    // Detect system core from filename extension
     const parts = filename.split('.');
     const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
-    
-    // Determine core based on extension and active system
-    let coreName = 'snes9x';
+    let core = 'snes';
+
     if (['bin', 'gen', 'md', 'smd'].includes(ext)) {
-      coreName = 'genesis_plus_gx';
+      core = 'segaMD';
       setSystem('megadrive');
     } else if (['smc', 'sfc', 'fig'].includes(ext)) {
-      coreName = 'snes9x';
+      core = 'snes';
       setSystem('snes');
     } else {
-      coreName = currentSystem === 'megadrive' ? 'genesis_plus_gx' : 'snes9x';
+      core = currentSystem === 'megadrive' ? 'segaMD' : 'snes';
     }
 
-    showStatus('CARGANDO JUEGO', `Descargando núcleo WebAssembly (${coreName.toUpperCase()}) para ${filename}...`, false);
+    showToast(`⚡ Preparando ${filename}...`);
 
-    // Clean up previous instance
-    if (nostalgistInstance) {
-      try {
-        await nostalgistInstance.exit();
-      } catch (e) {
-        console.warn('Error al desmontar emulador previo:', e);
-      }
-      nostalgistInstance = null;
-    }
-
-    // Verify Nostalgist is available
-    const ready = await ensureNostalgist();
-    if (!ready) {
-      showStatus('❌ ERROR DE CONEXIÓN', 'No se pudo cargar el motor WebAssembly de Nostalgist. Revisa tu conexión a internet o posibles extensiones bloqueadoras.', true);
+    // Prepare ROM object URL
+    let romUrl = '';
+    if (typeof fileOrUrl === 'string') {
+      romUrl = fileOrUrl;
+    } else if (fileOrUrl instanceof Blob || fileOrUrl instanceof File) {
+      romUrl = URL.createObjectURL(fileOrUrl);
+    } else {
+      showToast('❌ Formato de archivo no reconocido');
+      isLoading = false;
       return;
     }
 
-    // Prepare fresh canvas inside container
-    emulatorContainer.innerHTML = '';
-    const canvas = document.createElement('canvas');
-    canvas.id = 'emulator-canvas';
-    canvas.width = 512;
-    canvas.height = 480;
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.objectFit = 'contain';
-    canvas.style.imageRendering = 'pixelated';
-    canvas.style.display = 'block';
-    emulatorContainer.appendChild(canvas);
-
+    // Reset container and show player screen
     overlay.classList.add('hidden');
-    emulatorContainer.style.display = 'flex';
+    emulatorContainer.style.display = 'block';
+    emulatorContainer.innerHTML = '<div id="game" style="width: 100%; height: 100%;"></div>';
 
-    try {
-      console.log(`[RetroDeck Web] Lanzando ${filename} con núcleo: ${coreName}`);
+    // Set EmulatorJS global parameters
+    window.EJS_player = '#game';
+    window.EJS_core = core;
+    window.EJS_gameUrl = romUrl;
+    window.EJS_gameName = filename;
+    window.EJS_color = core === 'segaMD' ? '#00e5ff' : '#a855f7';
+    window.EJS_startOnLoaded = true;
+    window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
 
-      // Launch with official default Nostalgist core resolvers
-      nostalgistInstance = await Nostalgist.launch({
-        core: coreName,
-        rom: fileOrBlob,
-        element: canvas
-      });
+    // Remove existing script if any
+    const existingScript = document.getElementById('ejs-loader');
+    if (existingScript) existingScript.remove();
 
-      hideStatus();
-      isPaused = false;
-      btnPause.textContent = '⏸ PAUSAR';
+    // Inject official loader
+    const script = document.createElement('script');
+    script.id = 'ejs-loader';
+    script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+    script.onload = () => {
+      isLoading = false;
       showToast(`▶ Jugando: ${filename} (60 FPS)`, 4000);
-    } catch (err) {
-      console.error('[RetroDeck Web Error]', err);
-      emulatorContainer.style.display = 'none';
-      showStatus('❌ ERROR AL INICIAR EMULACIÓN', (err && err.message) || String(err), true);
-    }
+    };
+    script.onerror = () => {
+      isLoading = false;
+      showToast('❌ Error al conectar con el servidor WebAssembly', 5000);
+      ejectRom(true);
+    };
+
+    document.body.appendChild(script);
   }
 
-  // 5. Drag & Drop and File Input
+  // 4. Drag & Drop and File Input
   function setupDragAndDrop() {
     dropzone.addEventListener('click', () => fileInput.click());
 
@@ -266,6 +198,7 @@
       });
     });
 
+    // Single unified drop handler for the CRT screen
     crtViewport.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -275,105 +208,32 @@
       }
     });
 
-    dropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        launchRom(file, file.name);
-      }
-    });
-
-    // Also support dropping anywhere on the window
+    // Global dragover prevention
     window.addEventListener('dragover', (e) => e.preventDefault());
-    window.addEventListener('drop', (e) => {
-      e.preventDefault();
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        launchRom(file, file.name);
-      }
-    });
   }
 
-  // 6. Demos Launcher
+  // 5. Demos Launcher
   function setupDemos() {
     if (btnDemoSnes) {
-      btnDemoSnes.addEventListener('click', async () => {
-        try {
-          showToast('Descargando demo SNES: Astrohawk...');
-          const resp = await fetch('assets/demos/Astrohawk.smc');
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          const blob = await resp.blob();
-          launchRom(blob, 'Astrohawk (SNES).smc');
-        } catch (e) {
-          showToast('Error al cargar demo SNES: ' + e.message, 4000);
-        }
+      btnDemoSnes.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        launchRom('assets/demos/Astrohawk.smc', 'Astrohawk (SNES).smc');
       });
     }
 
     if (btnDemoMd) {
-      btnDemoMd.addEventListener('click', async () => {
-        try {
-          showToast('Descargando demo Mega Drive: BombX...');
-          const resp = await fetch('assets/demos/BombX.bin');
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          const blob = await resp.blob();
-          launchRom(blob, 'BombX (Mega Drive).bin');
-        } catch (e) {
-          showToast('Error al cargar demo Mega Drive: ' + e.message, 4000);
-        }
+      btnDemoMd.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        launchRom('assets/demos/BombX.bin', 'BombX (Mega Drive).bin');
       });
     }
   }
 
-  // 7. Controls & HUD Buttons
+  // 6. Controls & HUD Buttons
   function setupControls() {
-    // Pause / Resume
-    btnPause.addEventListener('click', async () => {
-      if (!nostalgistInstance) return;
-      if (isPaused) {
-        await nostalgistInstance.resume();
-        btnPause.textContent = '⏸ PAUSAR';
-        isPaused = false;
-        showToast('Juego reanudado');
-      } else {
-        await nostalgistInstance.pause();
-        btnPause.textContent = '▶ CONTINUAR';
-        isPaused = true;
-        showToast('Juego en pausa');
-      }
-    });
-
-    // Save State
-    btnSave.addEventListener('click', async () => {
-      if (!nostalgistInstance) return;
-      try {
-        const state = await nostalgistInstance.saveState();
-        localStorage.setItem(`retrodeck_state_${currentRomName}`, JSON.stringify(Array.from(new Uint8Array(state.state))));
-        showToast('💾 Savestate guardado en el navegador');
-      } catch (e) {
-        showToast('Error al guardar estado: ' + e.message);
-      }
-    });
-
-    // Load State
-    btnLoad.addEventListener('click', async () => {
-      if (!nostalgistInstance) return;
-      try {
-        const saved = localStorage.getItem(`retrodeck_state_${currentRomName}`);
-        if (!saved) {
-          showToast('No hay partida guardada para este juego');
-          return;
-        }
-        const stateArray = new Uint8Array(JSON.parse(saved));
-        await nostalgistInstance.loadState(stateArray.buffer);
-        showToast('⚡ Savestate restaurado');
-      } catch (e) {
-        showToast('Error al cargar estado: ' + e.message);
-      }
-    });
-
-    // CRT Toggle
+    // CRT Filter Toggle
     btnCrt.addEventListener('click', () => {
       isCrtEnabled = !isCrtEnabled;
       if (isCrtEnabled) {
@@ -387,24 +247,11 @@
       }
     });
 
-    // Mute / Sound
-    btnMute.addEventListener('click', () => {
-      isMuted = !isMuted;
-      if (isMuted) {
-        btnMute.textContent = '🔇 MUTE';
-        btnMute.classList.add('active');
-      } else {
-        btnMute.textContent = '🔊 AUDIO';
-        btnMute.classList.remove('active');
-      }
-      showToast(isMuted ? 'Audio silenciado' : 'Audio activado');
-    });
-
-    // Fullscreen
+    // Fullscreen Toggle
     btnFullscreen.addEventListener('click', () => {
       if (!document.fullscreenElement) {
         crtViewport.requestFullscreen().catch((err) => {
-          showToast('Error al activar pantalla completa: ' + err.message);
+          showToast('Pantalla completa no disponible: ' + err.message);
         });
       } else {
         document.exitFullscreen();
@@ -416,33 +263,18 @@
   }
 
   function ejectRom(silent = false) {
-    if (nostalgistInstance) {
-      try {
-        nostalgistInstance.exit();
-      } catch (e) {}
-      nostalgistInstance = null;
-    }
+    isLoading = false;
+    emulatorContainer.innerHTML = '';
     emulatorContainer.style.display = 'none';
     overlay.classList.remove('hidden');
-    hideStatus();
+
+    const script = document.getElementById('ejs-loader');
+    if (script) script.remove();
+
     if (!silent) {
       showToast('Cartucho expulsado. Volviendo al menú principal.');
     }
   }
-
-  // Keyboard Shortcuts (F5 = Save, F7 = Load, F11 = Fullscreen, ESC = Pause)
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'F5') {
-      e.preventDefault();
-      btnSave.click();
-    } else if (e.key === 'F7') {
-      e.preventDefault();
-      btnLoad.click();
-    } else if (e.key === 'Escape' && nostalgistInstance) {
-      e.preventDefault();
-      btnPause.click();
-    }
-  });
 
   // Start on DOM ready
   document.addEventListener('DOMContentLoaded', init);
