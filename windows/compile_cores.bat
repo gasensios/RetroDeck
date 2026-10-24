@@ -29,11 +29,15 @@ if %ERRORLEVEL% equ 0 (
 
 echo.
 echo [2/2] Compilando puente Sega Mega Drive (libmegadrive_bridge.dll)...
-gcc -O3 -shared -fPIC -Wall -Wextra megadrive_bridge.c -L. -lmegadrive -o libmegadrive_bridge.dll -lm
-if %ERRORLEVEL% equ 0 (
-    echo [OK] libmegadrive_bridge.dll generado correctamente.
+if exist "libmegadrive.dll" (
+    gcc -O3 -shared -fPIC -Wall -Wextra megadrive_bridge.c -L. -lmegadrive -o libmegadrive_bridge.dll -lm
+    if %ERRORLEVEL% equ 0 (
+        echo [OK] libmegadrive_bridge.dll generado correctamente.
+    ) else (
+        echo [ERROR] Fallo al compilar libmegadrive_bridge.dll.
+    )
 ) else (
-    echo [ERROR] Fallo al compilar libmegadrive_bridge.dll.
+    echo [AVISO] libmegadrive.dll no esta presente. Omitiendo puente de Mega Drive.
 )
 
 echo.

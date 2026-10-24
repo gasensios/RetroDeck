@@ -1,27 +1,39 @@
 @echo off
 setlocal enabledelayedexpansion
 
-title RetroDeck - Multi-System Retro Station (SNES & Sega Mega Drive)
+cd /d "%~dp0"
+
+title RetroDeck - Estacion de Juegos Retro (SNES y Sega Mega Drive)
 echo ======================================================================
 echo    RETRODECK - Estacion de Juegos Retro de 16 Bits (Windows)
 echo ======================================================================
 echo.
 
-:: 1. Check Python installation
+rem 1. Check Python installation (check 'python' first, then 'py' launcher)
+set "PYTHON_BIN="
 where python >nul 2>nul
-if %ERRORLEVEL% neq 0 (
+if %ERRORLEVEL% equ 0 (
+    set "PYTHON_BIN=python"
+) else (
+    where py >nul 2>nul
+    if %ERRORLEVEL% equ 0 (
+        set "PYTHON_BIN=py"
+    )
+)
+
+if not defined PYTHON_BIN (
     echo [ERROR] No se ha encontrado Python instalado en el sistema.
     echo Por favor, instala Python 3.10 o superior desde https://www.python.org/
-    echo Recuerda marcar la casilla: [X] "Add Python to PATH" durante la instalacion.
+    echo Recuerda marcar la casilla: [X] "Add python.exe to PATH" durante la instalacion.
     echo.
     pause
     exit /b 1
 )
 
-:: 2. Check and configure Virtual Environment
+rem 2. Check and configure Virtual Environment
 if not exist ".venv\Scripts\python.exe" (
     echo [INFO] Creando entorno virtual aislado (.venv)...
-    python -m venv .venv
+    !PYTHON_BIN! -m venv .venv
     if %ERRORLEVEL% neq 0 (
         echo [ERROR] Fallo al crear el entorno virtual.
         pause
@@ -39,7 +51,7 @@ if not exist ".venv\Scripts\python.exe" (
     echo.
 )
 
-:: 3. Check for native emulator DLLs
+rem 3. Check for native emulator DLLs
 if not exist "src\emulator_core\libretrosnes.dll" (
     if not exist "src\emulator_core\retrosnes.dll" (
         echo [AVISO] Las librerias nativas de Windows (.dll) aun no se han compilado.
@@ -55,7 +67,7 @@ if not exist "src\emulator_core\libretrosnes.dll" (
     )
 )
 
-:: 4. Launch RetroDeck
+rem 4. Launch RetroDeck
 echo [INFO] Iniciando RetroDeck en Windows...
 .venv\Scripts\python src\main.py
 

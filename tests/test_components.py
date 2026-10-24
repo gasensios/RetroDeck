@@ -145,5 +145,16 @@ class TestMultiSystem(unittest.TestCase):
 
         gameplay.stop_game()
 
+    def test_missing_core_graceful_handling(self):
+        missing_snes = SnesPlayer(Path("/tmp/nonexistent_core.dll"))
+        self.assertFalse(missing_snes.is_available)
+        self.assertIsNone(missing_snes.lib)
+        self.assertFalse(missing_snes.load_rom(Path("dummy.smc"), Path("/tmp"), Path("/tmp")))
+
+        missing_md = MegaDrivePlayer(Path("/tmp/nonexistent_core.dll"))
+        self.assertFalse(missing_md.is_available)
+        self.assertIsNone(missing_md.lib)
+        self.assertFalse(missing_md.load_rom(Path("dummy.bin"), Path("/tmp"), Path("/tmp")))
+
 if __name__ == "__main__":
     unittest.main()

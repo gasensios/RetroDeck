@@ -34,8 +34,7 @@ MD_BUTTON_MAP = {
 class MegaDrivePlayer:
     def __init__(self, lib_path: Path):
         self.lib_path = Path(lib_path).resolve()
-        if not self.lib_path.exists():
-            raise FileNotFoundError(f"Mega Drive bridge not found at: {self.lib_path}")
+        self.is_available = self.lib_path.exists()
 
         if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
             try:
@@ -43,8 +42,19 @@ class MegaDrivePlayer:
             except Exception:
                 pass
 
-        self.lib = ctypes.CDLL(str(self.lib_path))
-        self._setup_prototypes()
+        if self.is_available:
+            try:
+                self.lib = ctypes.CDLL(str(self.lib_path))
+                self._setup_prototypes()
+                self.is_initialized = self.lib.md_init()
+            except Exception as e:
+                print(f"[MegaDrivePlayer] Error al cargar la libreria nativa {self.lib_path}: {e}")
+                self.lib = None
+                self.is_available = False
+                self.is_initialized = False
+        else:
+            self.lib = None
+            self.is_initialized = False
         
         self.is_loaded = False
         self.rom_path = None
@@ -52,8 +62,6 @@ class MegaDrivePlayer:
         self.state_path = None
         self.width = 320
         self.height = 224
-
-        self.lib.md_init()
 
     def _setup_prototypes(self):
         self.lib.md_init.restype = ctypes.c_bool
@@ -86,6 +94,9 @@ class MegaDrivePlayer:
         self.lib.md_load_sram.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
 
     def load_rom(self, rom_path: Path, saves_dir: Path, states_dir: Path) -> bool:
+        if not self.is_available or not self.is_initialized or self.lib is None:
+            print(f"[MegaDrivePlayer] Error: Libreria nativa no disponible ({self.lib_path.name}).")
+            return False
         self.unload()
         self.rom_path = Path(rom_path)
         self.save_path = Path(saves_dir) / f"{self.rom_path.stem}.srm"

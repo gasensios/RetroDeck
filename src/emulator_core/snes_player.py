@@ -30,8 +30,7 @@ CORE_BUTTON_MAP = {
 class SnesPlayer:
     def __init__(self, lib_path: Path):
         self.lib_path = Path(lib_path).resolve()
-        if not self.lib_path.exists():
-            raise FileNotFoundError(f"Core library not found at: {self.lib_path}")
+        self.is_available = self.lib_path.exists()
 
         if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
             try:
@@ -39,9 +38,17 @@ class SnesPlayer:
             except Exception:
                 pass
 
-        self.lib = ctypes.CDLL(str(self.lib_path))
-        self._setup_prototypes()
-        
+        if self.is_available:
+            try:
+                self.lib = ctypes.CDLL(str(self.lib_path))
+                self._setup_prototypes()
+            except Exception as e:
+                print(f"[SnesPlayer] Error al cargar la libreria nativa {self.lib_path}: {e}")
+                self.lib = None
+                self.is_available = False
+        else:
+            self.lib = None
+
         self.snes_ptr = None
         self.is_loaded = False
         self.rom_path = None
@@ -103,6 +110,9 @@ class SnesPlayer:
         self.lib.snes_loadState.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int]
 
     def load_rom(self, rom_path: Path, saves_dir: Path, states_dir: Path) -> bool:
+        if not self.is_available or self.lib is None:
+            print(f"[SnesPlayer] Error: Libreria nativa no disponible ({self.lib_path.name}).")
+            return False
         self.unload()
         self.rom_path = Path(rom_path)
         self.save_path = Path(saves_dir) / f"{self.rom_path.stem}.srm"

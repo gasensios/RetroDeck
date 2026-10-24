@@ -59,6 +59,14 @@ class GameplayView:
         else:
             self.current_player = self.snes_player
 
+        if not self.current_player or not getattr(self.current_player, "is_available", False):
+            sys_label = "Sega Mega Drive" if rom_info.system_id == "megadrive" else "Super Nintendo"
+            dll_name = "libmegadrive_bridge.dll" if rom_info.system_id == "megadrive" else "libretrosnes.dll"
+            self._notify(f"FALTA NÚCLEO NATIVO ({dll_name})", 180)
+            print(f"[RetroDeck] Error: El núcleo para {sys_label} no está compilado ({dll_name}).")
+            print("Para compilar en Windows ejecuta: windows\\compile_cores.bat")
+            return False
+
         success = self.current_player.load_rom(rom_info.path, saves_dir, states_dir)
         if success:
             sys_name = "SEGA MEGA DRIVE" if rom_info.system_id == "megadrive" else "SUPER NINTENDO"
