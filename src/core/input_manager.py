@@ -108,7 +108,7 @@ class InputManager:
             if event.key == pygame.K_DOWN: return "DOWN"
             if event.key == pygame.K_LEFT: return "LEFT"
             if event.key == pygame.K_RIGHT: return "RIGHT"
-            if event.key == pygame.K_RETURN: return "A"
+            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE): return "A"
             if event.key == pygame.K_ESCAPE: return "MENU"
             if event.key == pygame.K_BACKSPACE: return "B"
 

@@ -26,6 +26,13 @@ class BrowserView:
         self.launch_btn_rect = pygame.Rect(0, 0, 0, 0)
         self.item_rects = []
 
+        self.notification_msg = ""
+        self.notification_timer = 0
+
+    def notify(self, msg: str, duration: int = 150):
+        self.notification_msg = msg
+        self.notification_timer = duration
+
     def get_selected_rom(self):
         if not self.rom_mgr.roms:
             return None
@@ -197,6 +204,15 @@ class BrowserView:
         footer_rect = pygame.Rect(16, h - 36, w - 32, 28)
         self.theme.draw_retro_box(surface, footer_rect, bg_color=(18, 16, 26), with_screws=False)
         self._draw_footer(surface, footer_rect)
+
+        # 4. Global Notification Toast
+        if self.notification_timer > 0:
+            self.notification_timer -= 1
+            toast_w = min(w - 60, 640)
+            toast_rect = pygame.Rect((w - toast_w) // 2, h - 90, toast_w, 40)
+            self.theme.draw_retro_box(surface, toast_rect, bg_color=(180, 20, 20), selected=True, with_screws=False)
+            toast_txt = self.theme.render_text(self.notification_msg, 9, PALETTE["text_white"], (0, 0, 0))
+            surface.blit(toast_txt, (toast_rect.x + (toast_rect.width - toast_txt.get_width()) // 2, toast_rect.y + 13))
 
     def _draw_rom_list(self, surface: pygame.Surface, rect: pygame.Rect, roms, active_sys):
         # Section Header Plate

@@ -117,7 +117,8 @@ No requiere descargar ni instalar absolutamente nada en tu ordenador:
 
 ### 🔄 Controles y Navegación en los Menús (Común a Desktop)
 - **`[TAB]`** (o los gatillos **`[L]` / `[R]`** en mando): Alternar consola activa (Super Nintendo <-> Sega Mega Drive).
-- **`[A]` o `[ENTER]`**: Iniciar el juego seleccionado.
+- **`[A]`, `[ENTER]` o `[ESPACIO]`**: Iniciar el juego seleccionado.
+- **`[F11]` o `[ALT + ENTER]`**: Alternar entre Pantalla Completa y Modo Ventana.
 - **`[X]` o `[M]`**: Abrir el **Menú Propio del Juego** (asignación de carátulas en múltiples formatos, copias de seguridad de partidas `.srm` y estadísticas).
 - **`[C]`**: Abrir la configuración interactiva de mandos con diagrama retro.
 - **`[S]`**: Menú de Ajustes generales (filtro CRT scanlines, volumen, etc.).
@@ -129,8 +130,8 @@ No requiere descargar ni instalar absolutamente nada en tu ordenador:
 
 * **`[F5]`**: Guardado Rápido instantáneo (*Quick Save*).
 * **`[F7]`**: Carga Rápida instantánea (*Quick Load*).
-* **`[F11]`**: Alternar Pantalla Completa.
-* **`[ESC]`**: **Menú de Pausa retro integrado** (Continuar, Guardar, Cargar, Reiniciar consola o Volver al catálogo).
+* **`[F11]` o `[ALT + ENTER]`**: Alternar Pantalla Completa / Ventana en tiempo real.
+* **`[ESC]`**: **Menú de Pausa retro integrado** (Continuar, Guardar, Cargar, Pantalla Completa, Reiniciar consola o Volver al catálogo).
 
 ---
 

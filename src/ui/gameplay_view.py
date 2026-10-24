@@ -35,6 +35,7 @@ class GameplayView:
             "CONTINUAR",
             "GUARDAR ESTADO (F5)",
             "CARGAR ESTADO (F7)",
+            "PANTALLA COMPLETA (F11)",
             "REINICIAR CONSOLA",
             "SALIR AL MENÚ PRINCIPAL"
         ]
@@ -140,13 +141,17 @@ class GameplayView:
                 else:
                     self._notify("NO EXISTE ESTADO PREVIO", 120)
                 self.is_paused = False
-            elif idx == 3: # Reiniciar
+            elif idx == 3: # Pantalla Completa
+                self.is_paused = False
+                self.sound.play("select")
+                return "TOGGLE_FULLSCREEN"
+            elif idx == 4: # Reiniciar
                 if self.current_player:
                     self.current_player.reset(hard=True)
                 self._notify("CONSOLA REINICIADA", 120)
                 self.is_paused = False
                 self.sound.play("select")
-            elif idx == 4: # Salir al Menú
+            elif idx == 5: # Salir al Menú
                 self.stop_game()
                 self.sound.play("back")
                 return "EXIT_TO_MENU"

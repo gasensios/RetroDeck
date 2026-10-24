@@ -224,12 +224,12 @@ RetroDeck permite personalizar los controles **de forma independiente para cada 
 ### Atajos Globales en los Menús
 * **`[TAB]` o `[L / R]`**: Cambiar consola activa (SNES <-> Mega Drive).
 * **`[C]`**: Abrir configuración de controles con diagrama retro.
-* **`[A]` o `[Enter]`**: Iniciar la ROM seleccionada.
+* **`[A]`, `[Enter]` o `[Espacio]`**: Iniciar la ROM seleccionada.
 * **`[X]` o `[M]`**: Abrir el Menú Propio del Juego (Gestión de carátulas, backups SRAM, estadísticas).
 * **`[Y]`**: Marcar o desmarcar juego como Favorito (estrella dorada).
 * **`[S]`**: Ajustes generales (Filtro CRT scanlines, intensidad, volumen).
 * **`[H]` o `[F1]`**: Ayuda interactiva integrada.
-* **`[F11]`**: Alternar Pantalla Completa.
+* **`[F11]` o `[Alt + Enter]`**: Alternar Pantalla Completa / Modo Ventana (a resolución nativa de monitor).
 
 ---
 
@@ -238,7 +238,8 @@ RetroDeck permite personalizar los controles **de forma independiente para cada 
 Tanto en Super Nintendo como en Sega Mega Drive:
 * **`[F5]`**: Guardar Estado Rápido (*Savestate* instantáneo).
 * **`[F7]`**: Cargar Estado Rápido (*Load State* instantáneo).
-* **`[ESC]`**: Abre el **Menú de Pausa retro** para continuar, guardar, cargar, reiniciar o salir de forma segura.
+* **`[F11]` o `[Alt + Enter]`**: Alternar entre pantalla completa y ventana en mitad de la partida.
+* **`[ESC]`**: Abre el **Menú de Pausa retro** con opciones de continuar, guardar, cargar, alternar pantalla completa, reiniciar consola o salir de forma segura.
 * Las partidas con pila interna (batería SRAM) se guardan en sus respectivas carpetas `saves/snes/` y `saves/megadrive/` en formato `.srm`.
 
 ---

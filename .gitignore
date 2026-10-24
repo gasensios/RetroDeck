@@ -39,17 +39,19 @@ __pycache__/
 *$py.class
 .pytest_cache/
 
-# 7. Binarios compilados compartidos y ejecutables
-src/emulator_core/*.so
-src/emulator_core/*.dll
-*.so
-*.dll
-*.exe
+# 7. Binarios temporales y ejecutables de empaquetado
 *.o
 *.a
+*.pdb
+*.lib
 build/
 dist/
 *.spec
+*.exe
+
+# Conservar y distribuir los núcleos nativos precompilados de RetroDeck (Linux y Windows)
+!src/emulator_core/*.so
+!src/emulator_core/*.dll
 
 # 8. Archivos del sistema operativo y del editor
 .DS_Store

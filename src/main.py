@@ -65,6 +65,8 @@ class RetroApp:
         # 4. Display Window
         self.width = self.config.get("video", "width", default=1024)
         self.height = self.config.get("video", "height", default=720)
+        self.windowed_width = self.width
+        self.windowed_height = self.height
         self.fullscreen = self.config.get("video", "fullscreen", default=False)
         self.clock = pygame.time.Clock()
         self.running = True
@@ -72,16 +74,24 @@ class RetroApp:
         self._setup_display()
 
     def _setup_display(self):
-        flags = pygame.RESIZABLE
         if self.fullscreen:
-            flags |= pygame.FULLSCREEN
-        
-        self.screen = pygame.display.set_mode((self.width, self.height), flags)
-        pygame.display.set_caption("RetroDeck - Multi-System Retro Station (SNES & Mega Drive)")
+            # (0, 0) with FULLSCREEN matches the native desktop monitor resolution
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            self.width, self.height = self.screen.get_size()
+        else:
+            w = getattr(self, "windowed_width", 1024)
+            h = getattr(self, "windowed_height", 720)
+            self.width, self.height = w, h
+            self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+        pygame.display.set_caption("RetroDeck - Estacion Retro Multi-Sistema (SNES y Mega Drive)")
 
     def toggle_fullscreen(self):
         self.fullscreen = not self.fullscreen
         self.config.set("video", "fullscreen", self.fullscreen)
+        if self.fullscreen:
+            if not hasattr(self, "windowed_width") or self.windowed_width <= 0:
+                self.windowed_width = self.width
+                self.windowed_height = self.height
         self._setup_display()
 
     def run(self):
@@ -95,12 +105,17 @@ class RetroApp:
                     break
 
                 elif event.type == pygame.VIDEORESIZE:
-                    self.width, self.height = event.w, event.h
-                    self.config.set("video", "width", self.width)
-                    self.config.set("video", "height", self.height)
-                    self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+                    if not self.fullscreen:
+                        self.width, self.height = event.w, event.h
+                        self.windowed_width, self.windowed_height = event.w, event.h
+                        self.config.set("video", "width", self.width)
+                        self.config.set("video", "height", self.height)
+                        self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
 
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+                elif event.type == pygame.KEYDOWN and (
+                    event.key == pygame.K_F11 or
+                    ((event.key in (pygame.K_RETURN, pygame.K_KP_ENTER)) and bool(event.mod & (pygame.KMOD_ALT | pygame.KMOD_RALT | pygame.KMOD_LALT)))
+                ):
                     self.toggle_fullscreen()
                     continue
 
@@ -110,6 +125,8 @@ class RetroApp:
                     if res == "EXIT_TO_MENU":
                         self.current_state = "BROWSER"
                         self.rom_mgr.scan_system(self.sys_mgr.get_active_system())
+                    elif res == "TOGGLE_FULLSCREEN":
+                        self.toggle_fullscreen()
                     continue
 
                 # Pass to active view or input manager
@@ -254,6 +271,14 @@ class RetroApp:
 
     def _launch_rom(self, rom):
         print(f"[RetroApp] Starting {rom.title} on {rom.system_id.upper()}...")
+        player = self.gameplay_view.md_player if rom.system_id == "megadrive" else self.gameplay_view.snes_player
+        if not getattr(player, "is_available", False):
+            sys_name = "Sega Mega Drive" if rom.system_id == "megadrive" else "Super Nintendo"
+            dll_name = "libmegadrive_bridge.dll" if rom.system_id == "megadrive" else "libretrosnes.dll"
+            self.browser_view.notify(f"FALTA NUCLEO NATIVO: {dll_name}")
+            print(f"[RetroApp] Error: No se puede iniciar {rom.title}. Falta {dll_name}")
+            return
+
         if self.config.get("emulator", "fullscreen_on_launch", default=True) and not self.fullscreen:
             self.toggle_fullscreen()
         
@@ -262,6 +287,7 @@ class RetroApp:
             self.current_state = "GAMEPLAY"
         else:
             print("[RetroApp] Error launching ROM in gameplay view.")
+            self.browser_view.notify("ERROR AL INICIAR LA ROM")
 
 
 if __name__ == "__main__":
