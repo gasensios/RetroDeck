@@ -86,8 +86,11 @@ class RetroTheme:
         self.antialias = True
         
         self._fonts = {}
+        self._text_cache = {}
         self._scanline_surface = None
         self._vignette_surface = None
+        self._grid_surface = None
+        self._glow_surfaces = {}
         self._last_screen_size = None
 
         # Precompute 70 starry particles for the 80s synthwave sky
@@ -112,6 +115,7 @@ class RetroTheme:
         self.font_scale = font_scale if font_scale in ("normal", "large", "xlarge") else "normal"
         self.antialias = bool(antialias)
         self._fonts.clear()
+        self._text_cache.clear()
 
     def _get_effective_size(self, size: int) -> int:
         scales = {"normal": 1.0, "large": 1.25, "xlarge": 1.5}
@@ -142,8 +146,12 @@ class RetroTheme:
         return self._fonts[key]
 
     def render_text(self, text: str, size: int, color: tuple, shadow_color: tuple = None, antialias: bool = None) -> pygame.Surface:
-        font = self.get_font(size)
         aa = self.antialias if antialias is None else antialias
+        cache_key = (text, size, color, shadow_color, aa, self.font_style, self.font_scale)
+        if cache_key in self._text_cache:
+            return self._text_cache[cache_key]
+
+        font = self.get_font(size)
         main_surf = font.render(text, aa, color)
         if shadow_color:
             shadow_surf = font.render(text, aa, shadow_color)
@@ -153,8 +161,14 @@ class RetroTheme:
             combined = pygame.Surface((w, h), pygame.SRCALPHA)
             combined.blit(shadow_surf, (offset, offset))
             combined.blit(main_surf, (0, 0))
-            return combined
-        return main_surf
+            result = combined
+        else:
+            result = main_surf
+
+        if len(self._text_cache) > 512:
+            self._text_cache.clear()
+        self._text_cache[cache_key] = result
+        return result
 
     def draw_fps_hud(self, surface: pygame.Surface, fps: float, x: int = None, y: int = None, is_ingame: bool = False):
         """
@@ -182,9 +196,16 @@ class RetroTheme:
         pos_x = (w - box_w - 16) if x is None else x
         pos_y = 14 if y is None else y
 
-        # Translucent chassis backing
-        bg_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
-        bg_surf.fill((14, 12, 22, 215))
+        # Translucent chassis backing (cached to eliminate per-frame allocations)
+        if not hasattr(self, "_fps_bg_cache"):
+            self._fps_bg_cache = {}
+        bg_key = (box_w, box_h)
+        if bg_key not in self._fps_bg_cache:
+            bg_surf = pygame.Surface(bg_key, pygame.SRCALPHA)
+            bg_surf.fill((14, 12, 22, 215))
+            self._fps_bg_cache[bg_key] = bg_surf
+        else:
+            bg_surf = self._fps_bg_cache[bg_key]
         surface.blit(bg_surf, (pos_x, pos_y))
 
         # Glowing metallic/neon border
@@ -217,6 +238,19 @@ class RetroTheme:
         pygame.draw.polygon(surface, c, points)
         pygame.draw.polygon(surface, (0, 0, 0), points, width=1)
 
+    def _get_horizon_glow_surf(self, w: int, glow_h: int, hor_glow: tuple) -> pygame.Surface:
+        key = (w, glow_h, hor_glow)
+        if key not in self._glow_surfaces:
+            if len(self._glow_surfaces) > 12:
+                self._glow_surfaces.clear()
+            glow_surf = pygame.Surface((w, glow_h * 2), pygame.SRCALPHA)
+            for i in range(glow_h * 2):
+                dist = abs(i - glow_h) / float(glow_h)
+                a = max(0, min(140, int((1.0 - dist) * 110)))
+                pygame.draw.line(glow_surf, (hor_glow[0], hor_glow[1], hor_glow[2], a), (0, i), (w, i))
+            self._glow_surfaces[key] = glow_surf
+        return self._glow_surfaces[key]
+
     def draw_animated_retro_bg(self, surface: pygame.Surface, system_id: str, ticks: int):
         """
         Draws an authentic 80s/90s Mode-7 synthwave perspective grid and starfield.
@@ -241,14 +275,9 @@ class RetroTheme:
         # Fill base sky
         surface.fill(top_sky)
 
-        # Draw soft horizon glow
+        # Draw soft horizon glow (re-uses cached gradient surface to eliminate 140 line rasterizations/frame)
         glow_h = 70
-        glow_rect = pygame.Rect(0, horizon_y - glow_h, w, glow_h * 2)
-        glow_surf = pygame.Surface((w, glow_h * 2), pygame.SRCALPHA)
-        for i in range(glow_h * 2):
-            dist = abs(i - glow_h) / float(glow_h)
-            a = max(0, min(140, int((1.0 - dist) * 110)))
-            pygame.draw.line(glow_surf, (hor_glow[0], hor_glow[1], hor_glow[2], a), (0, i), (w, i))
+        glow_surf = self._get_horizon_glow_surf(w, glow_h, hor_glow)
         surface.blit(glow_surf, (0, horizon_y - glow_h))
 
         # 2. Twinkling Starfield in Upper Sky
@@ -260,9 +289,13 @@ class RetroTheme:
                 star_col = tuple(max(0, min(255, int(c * tw))) for c in col)
                 surface.set_at((sx, sy), star_col)
 
-        # 3. Mode 7 / 3D Synthwave Perspective Grid Floor
+        # 3. Mode 7 / 3D Synthwave Perspective Grid Floor (re-uses preallocated surface)
         floor_h = h - horizon_y
-        grid_surf = pygame.Surface((w, floor_h), pygame.SRCALPHA)
+        if self._grid_surface is None or self._grid_surface.get_size() != (w, floor_h):
+            self._grid_surface = pygame.Surface((w, floor_h), pygame.SRCALPHA)
+        else:
+            self._grid_surface.fill((0, 0, 0, 0))
+        grid_surf = self._grid_surface
 
         # Floor base gradient (dark ground)
         if system_id == "neogeo":

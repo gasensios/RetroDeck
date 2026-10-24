@@ -1,6 +1,16 @@
 CC ?= gcc
-CFLAGS ?= -O3 -fPIC -Wall -Wextra
+ARCH ?= $(shell uname -m)
+
+# Base aggressive optimization flags for low-spec hardware (Raspberry Pi & PC)
+CFLAGS ?= -O3 -fPIC -Wall -Wextra -fomit-frame-pointer -funroll-loops
 LDFLAGS ?= -shared -lm
+
+# Hardware-specific auto-tuning for ARM / Raspberry Pi
+ifneq (,$(findstring arm,$(ARCH)))
+    CFLAGS += -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard
+else ifneq (,$(findstring aarch64,$(ARCH)))
+    CFLAGS += -march=armv8-a+crc -mtune=cortex-a72
+endif
 
 SNES_SOURCES = $(wildcard snes/*.c)
 SNES_TARGET = libretrosnes.so

@@ -60,6 +60,24 @@ static enum retro_pixel_format active_pixel_format = RETRO_PIXEL_FORMAT_RGB565;
 static bool is_game_loaded = false;
 static char neogeo_system_dir[512] = ".";
 
+// 256KB Precomputed LUT for instant RGB565 -> RGBA32 conversion
+static uint32_t lut_rgb565_to_rgba[65536];
+static bool lut_initialized = false;
+
+static void init_pixel_lut(void) {
+    if (lut_initialized) return;
+    for (int i = 0; i < 65536; i++) {
+        uint8_t r = (i >> 11) & 0x1F;
+        uint8_t g = (i >> 5) & 0x3F;
+        uint8_t b = i & 0x1F;
+        uint8_t r8 = (r << 3) | (r >> 2);
+        uint8_t g8 = (g << 2) | (g >> 4);
+        uint8_t b8 = (b << 3) | (b >> 2);
+        lut_rgb565_to_rgba[i] = ((uint32_t)r8) | (((uint32_t)g8) << 8) | (((uint32_t)b8) << 16) | (0xFF000000U);
+    }
+    lut_initialized = true;
+}
+
 static bool bridge_env(unsigned cmd, void *data) {
     if (cmd == 10) { // RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
         enum retro_pixel_format *fmt = (enum retro_pixel_format*)data;
@@ -87,35 +105,25 @@ static void bridge_video(const void *data, unsigned width, unsigned height, size
     current_height = height;
 
     const uint8_t *src_bytes = (const uint8_t*)data;
-    uint8_t *dst = frame_rgbx;
+    uint32_t *dst_u32 = (uint32_t*)frame_rgbx;
 
     if (active_pixel_format == RETRO_PIXEL_FORMAT_XRGB8888) {
         for (unsigned y = 0; y < height; y++) {
             const uint32_t *src_row = (const uint32_t*)(src_bytes + y * pitch);
+            uint32_t *dst_row = dst_u32 + (y * width);
             for (unsigned x = 0; x < width; x++) {
                 uint32_t pixel = src_row[x];
-                dst[0] = (pixel >> 16) & 0xFF; // R
-                dst[1] = (pixel >> 8) & 0xFF;  // G
-                dst[2] = pixel & 0xFF;         // B
-                dst[3] = 255;                  // A
-                dst += 4;
+                // Convert XRGB8888 (0x00RRGGBB) to little-endian RGBA32 (byte 0=R, 1=G, 2=B, 3=255)
+                dst_row[x] = (pixel & 0x0000FF00U) | ((pixel >> 16) & 0xFFU) | ((pixel & 0xFFU) << 16) | 0xFF000000U;
             }
         }
     } else {
-        // RGB565 -> RGB8888
+        // RGB565 -> RGBA32 via hardware-friendly L2 cache LUT
         for (unsigned y = 0; y < height; y++) {
             const uint16_t *src_row = (const uint16_t*)(src_bytes + y * pitch);
+            uint32_t *dst_row = dst_u32 + (y * width);
             for (unsigned x = 0; x < width; x++) {
-                uint16_t pixel = src_row[x];
-                uint8_t r = (pixel >> 11) & 0x1F;
-                uint8_t g = (pixel >> 5) & 0x3F;
-                uint8_t b = pixel & 0x1F;
-
-                dst[0] = (r << 3) | (r >> 2); // R
-                dst[1] = (g << 2) | (g >> 4); // G
-                dst[2] = (b << 3) | (b >> 2); // B
-                dst[3] = 255;                 // A
-                dst += 4;
+                dst_row[x] = lut_rgb565_to_rgba[src_row[x]];
             }
         }
     }
@@ -153,6 +161,7 @@ static int16_t bridge_input_state(unsigned port, unsigned device, unsigned index
 // Public API for Python ctypes
 
 bool ng_init(void) {
+    init_pixel_lut();
     audio_sample_count = 0;
     joypad_state[0] = 0;
     joypad_state[1] = 0;

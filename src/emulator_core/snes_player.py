@@ -66,6 +66,7 @@ class SnesPlayer:
         self.audio_buf = (ctypes.c_int16 * self.audio_buf_size)()
 
         # Pygame surface for the frame
+        self._surface = None
         self.frame_surface = pygame.Surface((512, 480))
         self.audio_channel = None
 
@@ -187,9 +188,10 @@ class SnesPlayer:
             self.lib.snes_setSamples(self.snes_ptr, ctypes.byref(self.audio_buf), self.samples_per_frame)
 
     def get_surface(self) -> pygame.Surface:
-        """Returns the current rendered frame as a Pygame Surface."""
-        raw_bytes = bytes(self.pixel_buf)
-        return pygame.image.frombuffer(raw_bytes, (512, 480), "RGBX")
+        """Returns the current rendered frame as a persistent Pygame Surface (Zero-Copy)."""
+        if self._surface is None:
+            self._surface = pygame.image.frombuffer(self.pixel_buf, (512, 480), "RGBX")
+        return self._surface
 
     def get_audio_bytes(self) -> bytes:
         """Returns the raw 16-bit stereo PCM audio samples."""

@@ -51,6 +51,8 @@ class GameplayView:
         self.audio_accumulator = bytearray()
         self.audio_chunk_size = 735 * 4 * 2  # 2 frames (5880 bytes ~ 33.3ms)
         self.emu_channel = None
+        self.cached_volume = 0.8
+        self._scaled_surface = None
         try:
             if pygame.mixer.get_init():
                 self.emu_channel = pygame.mixer.Channel(0)
@@ -63,6 +65,8 @@ class GameplayView:
         self.hud_message = ""
         self.hud_timer = 0
         self.audio_accumulator.clear()
+        self._scaled_surface = None
+        self.cached_volume = self.config.get("audio", "volume", default=0.8)
         try:
             if pygame.mixer.get_init():
                 if not self.emu_channel:
@@ -276,21 +280,32 @@ class GameplayView:
             if hasattr(self.current_player, "get_audio_bytes") and self.emu_channel:
                 try:
                     raw_audio = self.current_player.get_audio_bytes()
-                    if raw_audio and len(raw_audio) > 0:
+                    if raw_audio:
                         self.audio_accumulator.extend(raw_audio)
 
-                        if len(self.audio_accumulator) >= self.audio_chunk_size:
-                            chunk = bytes(self.audio_accumulator[:self.audio_chunk_size])
-                            self.audio_accumulator = self.audio_accumulator[self.audio_chunk_size:]
+                        # Pull and queue chunks only when channel queue has capacity
+                        while len(self.audio_accumulator) >= self.audio_chunk_size:
+                            can_play = not self.emu_channel.get_busy()
+                            can_queue = not self.emu_channel.get_queue()
 
-                            snd = pygame.mixer.Sound(buffer=chunk)
-                            vol = self.config.get("audio", "volume", default=0.8)
-                            snd.set_volume(vol)
+                            if can_play or can_queue:
+                                chunk = bytes(self.audio_accumulator[:self.audio_chunk_size])
+                                del self.audio_accumulator[:self.audio_chunk_size]
 
-                            if not self.emu_channel.get_busy():
-                                self.emu_channel.play(snd)
-                            elif not self.emu_channel.get_queue():
-                                self.emu_channel.queue(snd)
+                                snd = pygame.mixer.Sound(buffer=chunk)
+                                snd.set_volume(self.cached_volume)
+
+                                if can_play:
+                                    self.emu_channel.play(snd)
+                                else:
+                                    self.emu_channel.queue(snd)
+                            else:
+                                break
+
+                        # Cap audio accumulator to prevent latency buildup during lag spikes
+                        max_accum = self.audio_chunk_size * 3
+                        if len(self.audio_accumulator) > max_accum:
+                            del self.audio_accumulator[:len(self.audio_accumulator) - max_accum]
                 except Exception:
                     pass
 
@@ -298,7 +313,7 @@ class GameplayView:
         w, h = surface.get_size()
         surface.fill((0, 0, 0))
 
-        # 1. Render Framebuffer (preserving 4:3 Aspect Ratio)
+        # 1. Render Framebuffer (preserving 4:3 Aspect Ratio with Zero-Allocation scaling)
         if self.current_player and self.current_player.is_loaded:
             frame_surf = self.current_player.get_surface()
 
@@ -315,8 +330,11 @@ class GameplayView:
             dest_x = (w - dest_w) // 2
             dest_y = (h - dest_h) // 2
 
-            scaled_frame = pygame.transform.scale(frame_surf, (dest_w, dest_h))
-            surface.blit(scaled_frame, (dest_x, dest_y))
+            if self._scaled_surface is None or self._scaled_surface.get_size() != (dest_w, dest_h):
+                self._scaled_surface = pygame.Surface((dest_w, dest_h))
+
+            pygame.transform.scale(frame_surf, (dest_w, dest_h), self._scaled_surface)
+            surface.blit(self._scaled_surface, (dest_x, dest_y))
 
         # 2. On-Screen HUD Notification
         if self.hud_timer > 0 and self.hud_message:

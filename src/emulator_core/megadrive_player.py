@@ -78,6 +78,9 @@ class MegaDrivePlayer:
         self.audio_max_samples = 4096 * 2
         self.audio_buf = (ctypes.c_int16 * self.audio_max_samples)()
         self.audio_bytes = b""
+        self._surface = None
+        self._pixel_view = None
+        self._last_ptr = None
 
     def _setup_prototypes(self):
         self.lib.md_init.restype = ctypes.c_bool
@@ -92,7 +95,7 @@ class MegaDrivePlayer:
         self.lib.md_get_frame_info.restype = None
         self.lib.md_get_frame_info.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
 
-        self.lib.md_get_pixels.restype = ctypes.POINTER(ctypes.c_uint8)
+        self.lib.md_get_pixels.restype = ctypes.c_void_p
 
         if hasattr(self.lib, "md_get_samples"):
             self.lib.md_get_samples.restype = ctypes.c_int
@@ -155,6 +158,9 @@ class MegaDrivePlayer:
             self.lib.md_deinit()
             self.lib.md_init()
             self.is_loaded = False
+            self._surface = None
+            self._pixel_view = None
+            self._last_ptr = None
 
     def reset(self, hard=False):
         if self.is_loaded:
@@ -187,13 +193,21 @@ class MegaDrivePlayer:
         w = ctypes.c_int(320)
         h = ctypes.c_int(224)
         self.lib.md_get_frame_info(ctypes.byref(w), ctypes.byref(h))
-        self.width = max(256, min(640, w.value))
-        self.height = max(192, min(480, h.value))
+        new_w = max(256, min(640, w.value))
+        new_h = max(192, min(480, h.value))
 
         ptr = self.lib.md_get_pixels()
-        buf_size = self.width * self.height * 4
-        raw = ctypes.string_at(ptr, buf_size)
-        return pygame.image.frombuffer(raw, (self.width, self.height), "RGBX")
+        if not ptr:
+            return pygame.Surface((new_w, new_h))
+
+        if self._surface is None or self.width != new_w or self.height != new_h or self._last_ptr != ptr:
+            self.width = new_w
+            self.height = new_h
+            self._last_ptr = ptr
+            buf_size = self.width * self.height * 4
+            self._pixel_view = (ctypes.c_uint8 * buf_size).from_address(ptr)
+            self._surface = pygame.image.frombuffer(self._pixel_view, (self.width, self.height), "RGBX")
+        return self._surface
 
     def save_battery(self) -> bool:
         if not self.is_loaded or not self.save_path:

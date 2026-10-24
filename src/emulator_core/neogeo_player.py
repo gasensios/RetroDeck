@@ -81,6 +81,9 @@ class NeoGeoPlayer:
         self.audio_max_samples = 4096 * 2
         self.audio_buf = (ctypes.c_int16 * self.audio_max_samples)()
         self.audio_bytes = b""
+        self._surface = None
+        self._pixel_view = None
+        self._last_ptr = None
 
     def _setup_prototypes(self):
         self.lib.ng_init.restype = ctypes.c_bool
@@ -98,7 +101,7 @@ class NeoGeoPlayer:
         self.lib.ng_get_frame_info.restype = None
         self.lib.ng_get_frame_info.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
 
-        self.lib.ng_get_pixels.restype = ctypes.POINTER(ctypes.c_uint8)
+        self.lib.ng_get_pixels.restype = ctypes.c_void_p
 
         if hasattr(self.lib, "ng_get_samples"):
             self.lib.ng_get_samples.restype = ctypes.c_int
@@ -173,6 +176,9 @@ class NeoGeoPlayer:
             self.save_path = None
             self.state_path = None
             self.audio_bytes = b""
+            self._surface = None
+            self._pixel_view = None
+            self._last_ptr = None
 
     def reset(self, hard: bool = False):
         if self.is_loaded and self.lib:
@@ -209,8 +215,15 @@ class NeoGeoPlayer:
         if not pixel_ptr:
             return pygame.Surface((cur_w, cur_h))
 
-        raw_bytes = ctypes.string_at(pixel_ptr, cur_w * cur_h * 4)
-        return pygame.image.frombuffer(raw_bytes, (cur_w, cur_h), "RGBA")
+        if self._surface is None or self.width != cur_w or self.height != cur_h or self._last_ptr != pixel_ptr:
+            self.width = cur_w
+            self.height = cur_h
+            self._last_ptr = pixel_ptr
+            buf_size = cur_w * cur_h * 4
+            self._pixel_view = (ctypes.c_uint8 * buf_size).from_address(pixel_ptr)
+            self._surface = pygame.image.frombuffer(self._pixel_view, (cur_w, cur_h), "RGBA")
+
+        return self._surface
 
     def set_button(self, player: int, btn_name: str, pressed: bool):
         if not self.is_loaded or not self.lib:
