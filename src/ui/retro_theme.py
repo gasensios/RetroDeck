@@ -59,7 +59,22 @@ PALETTE = {
 class RetroTheme:
     def __init__(self, assets_dir: Path):
         self.assets_dir = assets_dir
-        self.font_path = assets_dir / "fonts" / "PressStart2P.ttf"
+        
+        # Locate PressStart2P.ttf with fallbacks
+        candidates = [
+            assets_dir / "fonts" / "PressStart2P.ttf",
+            assets_dir.parent / "docs" / "assets" / "fonts" / "PressStart2P.ttf",
+            assets_dir.parent / "assets" / "fonts" / "PressStart2P.ttf",
+            Path(__file__).resolve().parent.parent.parent / "assets" / "fonts" / "PressStart2P.ttf",
+            Path(__file__).resolve().parent.parent.parent / "docs" / "assets" / "fonts" / "PressStart2P.ttf",
+        ]
+        self.font_path = next((p for p in candidates if p.exists()), assets_dir / "fonts" / "PressStart2P.ttf")
+        
+        # Font preferences
+        self.font_style = "retro"   # "retro" or "hd"
+        self.font_scale = "normal"  # "normal", "large", "xlarge"
+        self.antialias = True
+        
         self._fonts = {}
         self._scanline_surface = None
         self._vignette_surface = None
@@ -81,29 +96,98 @@ class RetroTheme:
             phase = random.uniform(0, math.pi * 2)
             self.stars.append((rx, ry, color, speed, phase))
 
-    def get_font(self, size: int) -> pygame.font.Font:
-        if size not in self._fonts:
-            if self.font_path.exists():
-                try:
-                    self._fonts[size] = pygame.font.Font(str(self.font_path), size)
-                except Exception:
-                    self._fonts[size] = pygame.font.SysFont("monospace", size, bold=True)
-            else:
-                self._fonts[size] = pygame.font.SysFont("monospace", size, bold=True)
-        return self._fonts[size]
+    def set_font_preferences(self, font_style: str = "retro", font_scale: str = "normal", antialias: bool = True):
+        """Updates typography styling and scaling, clearing font cache for instant hot-reload."""
+        self.font_style = font_style if font_style in ("retro", "hd") else "retro"
+        self.font_scale = font_scale if font_scale in ("normal", "large", "xlarge") else "normal"
+        self.antialias = bool(antialias)
+        self._fonts.clear()
 
-    def render_text(self, text: str, size: int, color: tuple, shadow_color: tuple = None) -> pygame.Surface:
+    def _get_effective_size(self, size: int) -> int:
+        scales = {"normal": 1.0, "large": 1.25, "xlarge": 1.5}
+        factor = scales.get(self.font_scale, 1.0)
+        
+        if self.font_style == "hd":
+            # HD vector fonts have wider glyph margins; increase base size so height matches visual expectations
+            return max(11, int(size * 1.35 * factor))
+        else:
+            return max(6, int(round(size * factor)))
+
+    def get_font(self, size: int) -> pygame.font.Font:
+        effective_size = self._get_effective_size(size)
+        key = (self.font_style, effective_size)
+        if key not in self._fonts:
+            if self.font_style == "hd":
+                # High-definition clean vector font for maximum readability on laptop displays
+                self._fonts[key] = pygame.font.SysFont("segoeui,arial,dejavusans,liberationsans,notosans,sans-serif", effective_size, bold=True)
+            else:
+                # Classic 8-bit arcade pixel font
+                if self.font_path.exists():
+                    try:
+                        self._fonts[key] = pygame.font.Font(str(self.font_path), effective_size)
+                    except Exception:
+                        self._fonts[key] = pygame.font.SysFont("segoeui,arial,dejavusans,monospace", effective_size, bold=True)
+                else:
+                    self._fonts[key] = pygame.font.SysFont("segoeui,arial,dejavusans,monospace", effective_size, bold=True)
+        return self._fonts[key]
+
+    def render_text(self, text: str, size: int, color: tuple, shadow_color: tuple = None, antialias: bool = None) -> pygame.Surface:
         font = self.get_font(size)
-        main_surf = font.render(text, False, color)
+        aa = self.antialias if antialias is None else antialias
+        main_surf = font.render(text, aa, color)
         if shadow_color:
-            shadow_surf = font.render(text, False, shadow_color)
-            w = main_surf.get_width() + 2
-            h = main_surf.get_height() + 2
+            shadow_surf = font.render(text, aa, shadow_color)
+            offset = 1 if size <= 7 else 2
+            w = main_surf.get_width() + offset
+            h = main_surf.get_height() + offset
             combined = pygame.Surface((w, h), pygame.SRCALPHA)
-            combined.blit(shadow_surf, (2, 2))
+            combined.blit(shadow_surf, (offset, offset))
             combined.blit(main_surf, (0, 0))
             return combined
         return main_surf
+
+    def draw_fps_hud(self, surface: pygame.Surface, fps: float, x: int = None, y: int = None, is_ingame: bool = False):
+        """
+        Renders an authentic, stylish arcade FPS monitoring HUD badge.
+        Color transitions automatically according to performance:
+          - Green:  >= 57.0 FPS (Perfect 60 FPS lock)
+          - Yellow: 45.0 - 56.9 FPS (Minor dip)
+          - Red:    < 45.0 FPS (Severe frame drop alert)
+        """
+        w, h = surface.get_size()
+        
+        # Color & label coding
+        if fps >= 57.0:
+            status_col = PALETTE["led_green"]
+        elif fps >= 45.0:
+            status_col = PALETTE["sonic_gold"]
+        else:
+            status_col = PALETTE["led_red"]
+
+        fps_text = f"{fps:4.1f} FPS"
+        txt_surf = self.render_text(fps_text, 8, status_col, shadow_color=(0, 0, 0))
+        
+        box_w = txt_surf.get_width() + 24
+        box_h = 24
+        pos_x = (w - box_w - 16) if x is None else x
+        pos_y = 14 if y is None else y
+
+        # Translucent chassis backing
+        bg_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
+        bg_surf.fill((14, 12, 22, 215))
+        surface.blit(bg_surf, (pos_x, pos_y))
+
+        # Glowing metallic/neon border
+        hud_rect = pygame.Rect(pos_x, pos_y, box_w, box_h)
+        pygame.draw.rect(surface, status_col, hud_rect, width=1, border_radius=4)
+
+        # Pulsing status LED dot
+        led_x = pos_x + 9
+        led_y = pos_y + box_h // 2
+        pygame.draw.circle(surface, status_col, (led_x, led_y), 3)
+
+        # FPS Text
+        surface.blit(txt_surf, (pos_x + 18, pos_y + (box_h - txt_surf.get_height()) // 2))
 
     def draw_star(self, surface: pygame.Surface, cx: int, cy: int, radius: int = 5, color=None):
         """Draws a crisp 5-point golden retro star."""

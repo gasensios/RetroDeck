@@ -35,6 +35,7 @@ class GameplayView:
             "CONTINUAR",
             "GUARDAR ESTADO (F5)",
             "CARGAR ESTADO (F7)",
+            "CONTADOR FPS (F3)",
             "PANTALLA COMPLETA (F11)",
             "REINICIAR CONSOLA",
             "SALIR AL MENÚ PRINCIPAL"
@@ -123,6 +124,13 @@ class GameplayView:
                 else:
                     self._notify("NO HAY ESTADO GUARDADO", 120)
                 return None
+            elif event.key == pygame.K_F3:
+                curr = self.config.get("video", "show_fps", default=False)
+                new_val = not curr
+                self.config.set("video", "show_fps", new_val)
+                self._notify(f"★ CONTADOR FPS: {'ACTIVADO' if new_val else 'DESACTIVADO'}", 100)
+                self.sound.play("select")
+                return None
             elif event.key == pygame.K_ESCAPE:
                 self.is_paused = not self.is_paused
                 self.sound.play("select" if self.is_paused else "back")
@@ -165,17 +173,24 @@ class GameplayView:
                 else:
                     self._notify("NO EXISTE ESTADO PREVIO", 120)
                 self.is_paused = False
-            elif idx == 3: # Pantalla Completa
+            elif idx == 3: # Contador FPS
+                curr = self.config.get("video", "show_fps", default=False)
+                new_val = not curr
+                self.config.set("video", "show_fps", new_val)
+                self._notify(f"★ CONTADOR FPS: {'ACTIVADO' if new_val else 'DESACTIVADO'}", 100)
+                self.is_paused = False
+                self.sound.play("select")
+            elif idx == 4: # Pantalla Completa
                 self.is_paused = False
                 self.sound.play("select")
                 return "TOGGLE_FULLSCREEN"
-            elif idx == 4: # Reiniciar
+            elif idx == 5: # Reiniciar
                 if self.current_player:
                     self.current_player.reset(hard=True)
                 self._notify("CONSOLA REINICIADA", 120)
                 self.is_paused = False
                 self.sound.play("select")
-            elif idx == 5: # Salir al Menú
+            elif idx == 6: # Salir al Menú
                 self.stop_game()
                 self.sound.play("back")
                 return "EXIT_TO_MENU"
@@ -303,7 +318,7 @@ class GameplayView:
         surface.blit(dim_surf, (0, 0))
 
         card_w = min(420, w - 40)
-        card_h = 320
+        card_h = 380
         card_x = (w - card_w) // 2
         card_y = (h - card_h) // 2
         card_rect = pygame.Rect(card_x, card_y, card_w, card_h)
@@ -311,22 +326,22 @@ class GameplayView:
         self.theme.draw_retro_box(surface, card_rect, bg_color=(25, 22, 38), selected=True)
 
         pause_txt = self.theme.render_text("PAUSA", 16, PALETTE["gold_highlight"], (0, 0, 0))
-        surface.blit(pause_txt, (card_rect.x + (card_w - pause_txt.get_width()) // 2, card_rect.y + 20))
+        surface.blit(pause_txt, (card_rect.x + (card_w - pause_txt.get_width()) // 2, card_rect.y + 16))
 
         if self.active_rom:
             sys_tag = "[SEGA MEGADRIVE]" if self.active_rom.system_id == "megadrive" else "[SUPER NINTENDO]"
             tag_surf = self.theme.render_text(sys_tag, 7, PALETTE["accent_lavender"])
-            surface.blit(tag_surf, (card_rect.x + (card_w - tag_surf.get_width()) // 2, card_rect.y + 44))
+            surface.blit(tag_surf, (card_rect.x + (card_w - tag_surf.get_width()) // 2, card_rect.y + 40))
 
             title_txt = self.theme.render_text(self.active_rom.title[:24], 8, PALETTE["text_white"])
-            surface.blit(title_txt, (card_rect.x + (card_w - title_txt.get_width()) // 2, card_rect.y + 60))
+            surface.blit(title_txt, (card_rect.x + (card_w - title_txt.get_width()) // 2, card_rect.y + 55))
 
-        pygame.draw.line(surface, PALETTE["accent_purple"], (card_rect.x + 20, card_rect.y + 78), (card_rect.right - 20, card_rect.y + 78), 2)
+        pygame.draw.line(surface, PALETTE["accent_purple"], (card_rect.x + 20, card_rect.y + 72), (card_rect.right - 20, card_rect.y + 72), 2)
 
-        opt_y = card_rect.y + 90
+        opt_y = card_rect.y + 82
         for i, opt in enumerate(self.pause_options):
             is_sel = (i == self.pause_selected_idx)
-            row_rect = pygame.Rect(card_rect.x + 20, opt_y, card_w - 40, 32)
+            row_rect = pygame.Rect(card_rect.x + 20, opt_y, card_w - 40, 28)
 
             row_bg = PALETTE["bg_card_selected"] if is_sel else (32, 30, 48)
             self.theme.draw_retro_box(surface, row_rect, bg_color=row_bg, selected=is_sel)
@@ -336,7 +351,7 @@ class GameplayView:
             txt = self.theme.render_text(f"{prefix}{opt}", 8, col)
             surface.blit(txt, (row_rect.x + 12, row_rect.y + (row_rect.height - txt.get_height()) // 2))
 
-            opt_y += 38
+            opt_y += 34
 
         tip = self.theme.render_text("[F5] GUARDAR   [F7] CARGAR   [ESC] REANUDAR", 7, PALETTE["text_gray"])
         surface.blit(tip, (card_rect.x + (card_w - tip.get_width()) // 2, card_rect.bottom - 20))

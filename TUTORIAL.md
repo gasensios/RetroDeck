@@ -225,9 +225,10 @@ RetroDeck permite personalizar los controles **de forma independiente para cada 
 * **`[TAB]` o `[L / R]`**: Cambiar consola activa (SNES <-> Mega Drive).
 * **`[C]`**: Abrir configuración de controles con diagrama retro.
 * **`[A]`, `[Enter]` o `[Espacio]`**: Iniciar la ROM seleccionada.
+* **`[F3]`**: Activar / desactivar contador de FPS en tiempo real con monitor de estabilidad.
 * **`[X]` o `[M]`**: Abrir el Menú Propio del Juego (Gestión de carátulas, backups SRAM, estadísticas).
 * **`[Y]`**: Marcar o desmarcar juego como Favorito (estrella dorada).
-* **`[S]`**: Ajustes generales (Filtro CRT scanlines, intensidad, volumen).
+* **`[S]`**: Ajustes generales (Tamaño de fuente para portátiles, tipografía HD / Pixel Retro, contador FPS, filtro CRT scanlines, scanlines en menús, intensidad, volumen).
 * **`[H]` o `[F1]`**: Ayuda interactiva integrada.
 * **`[F11]` o `[Alt + Enter]`**: Alternar Pantalla Completa / Modo Ventana (a resolución nativa de monitor).
 
@@ -236,10 +237,11 @@ RetroDeck permite personalizar los controles **de forma independiente para cada 
 ## 8. Durante la Partida: Menú de Pausa y Savestates
 
 Tanto en Super Nintendo como en Sega Mega Drive:
+* **`[F3]`**: Alternar el visor de FPS en tiempo real en la esquina superior (verde = 60 FPS fijos, amarillo/rojo = caídas).
 * **`[F5]`**: Guardar Estado Rápido (*Savestate* instantáneo).
 * **`[F7]`**: Cargar Estado Rápido (*Load State* instantáneo).
 * **`[F11]` o `[Alt + Enter]`**: Alternar entre pantalla completa y ventana en mitad de la partida.
-* **`[ESC]`**: Abre el **Menú de Pausa retro** con opciones de continuar, guardar, cargar, alternar pantalla completa, reiniciar consola o salir de forma segura.
+* **`[ESC]`**: Abre el **Menú de Pausa retro** con opciones de continuar, guardar, cargar, contador FPS, alternar pantalla completa, reiniciar consola o salir de forma segura.
 * Las partidas con pila interna (batería SRAM) se guardan en sus respectivas carpetas `saves/snes/` y `saves/megadrive/` en formato `.srm`.
 
 ---

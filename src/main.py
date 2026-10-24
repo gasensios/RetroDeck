@@ -42,6 +42,11 @@ class RetroApp:
         # Assets & Theme
         assets_dir = PROJECT_ROOT / "assets"
         self.theme = RetroTheme(assets_dir)
+        self.theme.set_font_preferences(
+            font_style=self.config.get("video", "font_style", default="retro"),
+            font_scale=self.config.get("video", "font_size", default="normal"),
+            antialias=self.config.get("video", "font_antialiasing", default=True)
+        )
 
         # Systems & ROMs
         self.sys_mgr = SystemManager(PROJECT_ROOT, active_system_id="snes")
@@ -95,6 +100,9 @@ class RetroApp:
         self._setup_display()
 
     def run(self):
+        self.current_fps = 60.0
+        self._last_fps_calc = 0
+
         while self.running:
             # 1. Event Handling
             for event in pygame.event.get():
@@ -117,6 +125,20 @@ class RetroApp:
                     ((event.key in (pygame.K_RETURN, pygame.K_KP_ENTER)) and bool(event.mod & (pygame.KMOD_ALT | pygame.KMOD_RALT | pygame.KMOD_LALT)))
                 ):
                     self.toggle_fullscreen()
+                    continue
+
+                # Global FPS HUD Toggle (F3)
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_F3:
+                    curr = self.config.get("video", "show_fps", default=False)
+                    new_val = not curr
+                    self.config.set("video", "show_fps", new_val)
+                    self.browser_view.show_fps = new_val
+                    self.sound.play("select")
+                    status_str = "ACTIVADO" if new_val else "DESACTIVADO"
+                    if self.current_state == "GAMEPLAY":
+                        self.gameplay_view._notify(f"★ CONTADOR FPS: {status_str}", 90)
+                    else:
+                        self.browser_view.notify(f"CONTADOR FPS: {status_str}", 90)
                     continue
 
                 # Delegate to GAMEPLAY view if running
@@ -165,6 +187,14 @@ class RetroApp:
                                 self.game_menu_view.set_rom(selected_rom, self.sys_mgr.get_active_system())
                                 self.current_state = "GAME_MENU"
                                 self.sound.play("select")
+                        elif res == "TOGGLE_FPS":
+                            curr = self.config.get("video", "show_fps", default=False)
+                            new_val = not curr
+                            self.config.set("video", "show_fps", new_val)
+                            self.browser_view.show_fps = new_val
+                            self.sound.play("select")
+                            status_str = "ACTIVADO" if new_val else "DESACTIVADO"
+                            self.browser_view.notify(f"CONTADOR FPS: {status_str}", 90)
                         continue
                     elif event.type == pygame.KEYDOWN:
                         if event.key in (pygame.K_TAB, pygame.K_t):
@@ -208,6 +238,7 @@ class RetroApp:
                 self.theme.draw_animated_retro_bg(self.screen, active_sys_id, pygame.time.get_ticks())
 
                 if self.current_state == "BROWSER":
+                    self.browser_view.show_fps = self.config.get("video", "show_fps", default=False)
                     self.browser_view.draw(self.screen)
                 elif self.current_state == "CONTROLS":
                     self.controls_view.draw(self.screen)
@@ -220,11 +251,23 @@ class RetroApp:
 
             # Optional CRT Scanlines Filter Overlay
             if self.config.get("video", "crt_filter", default=True):
-                intensity = self.config.get("video", "crt_scanline_intensity", default=45)
-                self.theme.draw_scanlines(self.screen, intensity)
+                show_on_menus = self.config.get("video", "crt_filter_menus", default=False)
+                if self.current_state == "GAMEPLAY" or show_on_menus:
+                    intensity = self.config.get("video", "crt_scanline_intensity", default=45)
+                    self.theme.draw_scanlines(self.screen, intensity)
+
+            # Real-Time FPS HUD Overlay
+            if self.config.get("video", "show_fps", default=False):
+                self.theme.draw_fps_hud(self.screen, self.current_fps, is_ingame=(self.current_state == "GAMEPLAY"))
 
             pygame.display.flip()
             self.clock.tick(self.config.get("video", "fps_target", default=60))
+
+            # Update smoothed FPS reading
+            now = pygame.time.get_ticks()
+            if now - self._last_fps_calc >= 200:
+                self.current_fps = self.clock.get_fps()
+                self._last_fps_calc = now
 
         if self.current_state == "GAMEPLAY":
             self.gameplay_view.stop_game()

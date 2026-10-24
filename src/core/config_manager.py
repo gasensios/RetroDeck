@@ -29,8 +29,13 @@ DEFAULT_CONFIG = {
         "height": 720,
         "fullscreen": False,
         "crt_filter": True,
+        "crt_filter_menus": False,
         "crt_scanline_intensity": 45,  # 0 to 100
-        "fps_target": 60
+        "fps_target": 60,
+        "show_fps": False,
+        "font_size": "normal",      # "normal", "large", "xlarge"
+        "font_style": "retro",      # "retro", "hd"
+        "font_antialiasing": True
     },
     "audio": {
         "sound_effects_enabled": True,

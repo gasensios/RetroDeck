@@ -23,10 +23,12 @@ class BrowserView:
         # Interactive Click Rectangles
         self.snes_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.md_tab_rect = pygame.Rect(0, 0, 0, 0)
+        self.fps_btn_rect = pygame.Rect(0, 0, 0, 0)
         self.launch_btn_rect = pygame.Rect(0, 0, 0, 0)
         self.game_menu_btn_rect = pygame.Rect(0, 0, 0, 0)
         self.cart_rect = pygame.Rect(0, 0, 0, 0)
         self.item_rects = []
+        self.show_fps = False
 
         self.notification_msg = ""
         self.notification_timer = 0
@@ -49,6 +51,10 @@ class BrowserView:
         self.sound.play("launch")
 
     def handle_mouse_click(self, pos) -> Optional[str]:
+        # Click FPS Toggle
+        if self.fps_btn_rect.collidepoint(pos):
+            return "TOGGLE_FPS"
+
         # Click System Switcher
         if self.snes_tab_rect.collidepoint(pos) and self.sys_mgr.get_active_system().id != "snes":
             self.switch_system()
@@ -165,14 +171,16 @@ class BrowserView:
         self.theme.draw_led(surface, title_x + 95, led_y, "60Hz NTSC", is_on=True, color="green")
         self.theme.draw_led(surface, title_x + 205, led_y, "16-BIT STEREO", is_on=True, color="green")
 
-        # Right Side: Interactive System Tabs [★ SNES] [★ MEGADRIVE]
+        # Right Side: Interactive System Tabs [★ SNES] [★ MEGADRIVE] + [F3: FPS]
         snes_active = (active_sys.id == "snes")
-        tab_w = 125
+        tab_w = 115
         tab_h = 32
         tab_y = header_rect.y + 15
+        fps_w = 115
 
-        self.snes_tab_rect = pygame.Rect(header_rect.right - (tab_w * 2) - 20, tab_y, tab_w, tab_h)
         self.md_tab_rect = pygame.Rect(header_rect.right - tab_w - 10, tab_y, tab_w, tab_h)
+        self.snes_tab_rect = pygame.Rect(self.md_tab_rect.left - tab_w - 8, tab_y, tab_w, tab_h)
+        self.fps_btn_rect = pygame.Rect(self.snes_tab_rect.left - fps_w - 8, tab_y, fps_w, tab_h)
 
         self.theme.draw_retro_box(surface, self.snes_tab_rect,
                                   bg_color=(45, 40, 65) if snes_active else (28, 25, 40),
@@ -181,13 +189,22 @@ class BrowserView:
                                   bg_color=(45, 40, 65) if not snes_active else (28, 25, 40),
                                   selected=not snes_active, with_screws=False)
 
+        fps_active = getattr(self, "show_fps", False)
+        self.theme.draw_retro_box(surface, self.fps_btn_rect,
+                                  bg_color=(34, 44, 38) if fps_active else (28, 25, 40),
+                                  selected=fps_active, with_screws=False)
+
         snes_col = PALETTE["gold_highlight"] if snes_active else PALETTE["text_gray"]
         md_col = PALETTE["gold_highlight"] if not snes_active else PALETTE["text_gray"]
+        fps_col = PALETTE["led_green"] if fps_active else PALETTE["text_gray"]
+
         snes_lbl = self.theme.render_text("* SNES", 8, snes_col)
         md_lbl = self.theme.render_text("* MEGADRIVE", 8, md_col)
+        fps_lbl = self.theme.render_text("[F3] FPS: ON" if fps_active else "[F3] FPS: OFF", 7, fps_col)
 
-        surface.blit(snes_lbl, (self.snes_tab_rect.x + (tab_w - snes_lbl.get_width()) // 2, self.snes_tab_rect.y + 10))
-        surface.blit(md_lbl, (self.md_tab_rect.x + (tab_w - md_lbl.get_width()) // 2, self.md_tab_rect.y + 10))
+        surface.blit(snes_lbl, (self.snes_tab_rect.x + (tab_w - snes_lbl.get_width()) // 2, self.snes_tab_rect.y + (tab_h - snes_lbl.get_height()) // 2))
+        surface.blit(md_lbl, (self.md_tab_rect.x + (tab_w - md_lbl.get_width()) // 2, self.md_tab_rect.y + (tab_h - md_lbl.get_height()) // 2))
+        surface.blit(fps_lbl, (self.fps_btn_rect.x + (fps_w - fps_lbl.get_width()) // 2, self.fps_btn_rect.y + (tab_h - fps_lbl.get_height()) // 2))
 
         # 2. Main Layout Split
         margin = 16
@@ -287,17 +304,17 @@ class BrowserView:
 
             text_col = PALETTE["text_white"] if not is_selected else PALETTE["gold_highlight"]
             txt_surf = self.theme.render_text(disp_title, 8, text_col, shadow_color=(0, 0, 0) if is_selected else None)
-            surface.blit(txt_surf, (text_x, item_rect.y + 14))
+            surface.blit(txt_surf, (text_x, item_rect.y + (item_rect.height - txt_surf.get_height()) // 2))
 
             # Region / Type Tag Badge
             tag_text = rom.region if rom.region != "Unknown" else rom.rom_type
             if tag_text:
                 tag_surf = self.theme.render_text(tag_text[:7].upper(), 7, active_sys.accent_color)
                 tag_badge_w = tag_surf.get_width() + 8
-                tag_rect = pygame.Rect(item_rect.right - tag_badge_w - 6, item_rect.y + 12, tag_badge_w, 16)
+                tag_rect = pygame.Rect(item_rect.right - tag_badge_w - 6, item_rect.y + (item_rect.height - 18) // 2, tag_badge_w, 18)
                 pygame.draw.rect(surface, (20, 20, 28), tag_rect, border_radius=2)
                 pygame.draw.rect(surface, (45, 48, 62), tag_rect, width=1, border_radius=2)
-                surface.blit(tag_surf, (tag_rect.x + 4, tag_rect.y + 3))
+                surface.blit(tag_surf, (tag_rect.x + 4, tag_rect.y + (tag_rect.height - tag_surf.get_height()) // 2))
 
     def _draw_rom_details(self, surface: pygame.Surface, rect: pygame.Rect, rom, active_sys):
         # Section Header Plate
@@ -377,8 +394,8 @@ class BrowserView:
             lbl_surf = self.theme.render_text(label, 7, active_sys.accent_color)
             val_surf = self.theme.render_text(val, 7, PALETTE["text_white"])
             surface.blit(lbl_surf, (specs_box.x + 10, row_y))
-            surface.blit(val_surf, (specs_box.x + 95, row_y))
-            row_y += 17
+            surface.blit(val_surf, (specs_box.x + 106, row_y))
+            row_y += max(17, lbl_surf.get_height() + 5)
             if row_y >= specs_box.bottom - 12:
                 break
 
@@ -395,12 +412,14 @@ class BrowserView:
         
         short_name = getattr(active_sys, "short", getattr(active_sys, "name", "SISTEMA")).upper()
         btn_txt = self.theme.render_text(f">> JUGAR [{short_name}] <<", 8, PALETTE["text_white"], (0, 0, 0))
-        surface.blit(btn_txt, (self.launch_btn_rect.x + (self.launch_btn_rect.width - btn_txt.get_width()) // 2, self.launch_btn_rect.y + 11))
+        surface.blit(btn_txt, (self.launch_btn_rect.x + (self.launch_btn_rect.width - btn_txt.get_width()) // 2,
+                               self.launch_btn_rect.y + (btn_h - btn_txt.get_height()) // 2))
 
         menu_txt = self.theme.render_text("[ MENU (X/M) ]", 7, PALETTE["gold_highlight"])
-        surface.blit(menu_txt, (self.game_menu_btn_rect.x + (self.game_menu_btn_rect.width - menu_txt.get_width()) // 2, self.game_menu_btn_rect.y + 11))
+        surface.blit(menu_txt, (self.game_menu_btn_rect.x + (self.game_menu_btn_rect.width - menu_txt.get_width()) // 2,
+                               self.game_menu_btn_rect.y + (btn_h - menu_txt.get_height()) // 2))
 
     def _draw_footer(self, surface: pygame.Surface, rect: pygame.Rect):
-        guide = "[A/ENTER] JUGAR   [X / M] MENU JUEGO   [TAB] CONSOLA   [Y] FAVORITO   [C] CONTROLES   [S] AJUSTES   [ESC] SALIR"
+        guide = "[A/ENTER] JUGAR   [X / M] MENU JUEGO   [TAB] CONSOLA   [F3] FPS   [Y] FAVORITO   [C] CONTROLES   [S] AJUSTES   [ESC] SALIR"
         guide_surf = self.theme.render_text(guide, 7, PALETTE["gold_highlight"])
-        surface.blit(guide_surf, (rect.x + (rect.width - guide_surf.get_width()) // 2, rect.y + 8))
+        surface.blit(guide_surf, (rect.x + (rect.width - guide_surf.get_width()) // 2, rect.y + (rect.height - guide_surf.get_height()) // 2))

@@ -94,10 +94,11 @@ class HelpView:
             ("- [TAB] o [L / R]: Cambiar consola (SNES / MD)", ""),
             ("- [C]: Configurar controles por consola", ""),
             ("- [A / Enter / Espacio]: Jugar al juego", ""),
+            ("- [F3]: Activar / desactivar contador FPS", ""),
             ("- [F11] o [Alt+Enter]: Pantalla Completa", ""),
             ("- [X] o [M]: Menu de Opciones del Juego", ""),
             ("- [Y]: Marcar o desmarcar favorito", ""),
-            ("- [S]: Ajustes (Video, CRT, Sonido)", ""),
+            ("- [S]: Ajustes (Fuentes, FPS, CRT, Sonido)", ""),
             ("- [H / F1]: Abrir esta pantalla de ayuda", ""),
         ]
 

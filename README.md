@@ -118,20 +118,22 @@ No requiere descargar ni instalar absolutamente nada en tu ordenador:
 ### 🔄 Controles y Navegación en los Menús (Común a Desktop)
 - **`[TAB]`** (o los gatillos **`[L]` / `[R]`** en mando): Alternar consola activa (Super Nintendo <-> Sega Mega Drive).
 - **`[A]`, `[ENTER]` o `[ESPACIO]`**: Iniciar el juego seleccionado.
+- **`[F3]`**: Activar / desactivar contador de FPS en tiempo real con indicador LED de rendimiento.
 - **`[F11]` o `[ALT + ENTER]`**: Alternar entre Pantalla Completa y Modo Ventana.
 - **`[X]` o `[M]`**: Abrir el **Menú Propio del Juego** (asignación de carátulas en múltiples formatos, copias de seguridad de partidas `.srm` y estadísticas).
 - **`[C]`**: Abrir la configuración interactiva de mandos con diagrama retro.
-- **`[S]`**: Menú de Ajustes generales (filtro CRT scanlines, volumen, etc.).
+- **`[S]`**: Menú de Ajustes generales (tamaño de fuente para portátiles, estilo HD/Pixel, contador FPS, filtro CRT scanlines, volumen, etc.).
 - **`[H]` o `[F1]`**: Guía rápida y ayuda en pantalla.
 
 ---
 
 ## 🕹️ Atajos Durante la Partida
 
+* **`[F3]`**: Activar / desactivar monitor de FPS en tiempo real (verde = 60 FPS estables, amarillo/rojo = caídas).
 * **`[F5]`**: Guardado Rápido instantáneo (*Quick Save*).
 * **`[F7]`**: Carga Rápida instantánea (*Quick Load*).
 * **`[F11]` o `[ALT + ENTER]`**: Alternar Pantalla Completa / Ventana en tiempo real.
-* **`[ESC]`**: **Menú de Pausa retro integrado** (Continuar, Guardar, Cargar, Pantalla Completa, Reiniciar consola o Volver al catálogo).
+* **`[ESC]`**: **Menú de Pausa retro integrado** (Continuar, Guardar, Cargar, Contador FPS, Pantalla Completa, Reiniciar consola o Volver al catálogo).
 
 ---
 

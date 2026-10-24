@@ -160,5 +160,69 @@ class TestMultiSystem(unittest.TestCase):
         self.assertIsNone(missing_md.lib)
         self.assertFalse(missing_md.load_rom(Path("dummy.bin"), Path("/tmp"), Path("/tmp")))
 
+    def test_font_preferences_and_resolution(self):
+        theme = RetroTheme(PROJECT_ROOT / "assets")
+        
+        # 1. Retro mode (normal scale)
+        theme.set_font_preferences(font_style="retro", font_scale="normal", antialias=True)
+        s_norm = theme.render_text("RETRO FONT TEST", 8, (255, 255, 255))
+        self.assertGreater(s_norm.get_width(), 50)
+        self.assertEqual(s_norm.get_height(), 8)
+
+        # 2. Retro mode (large scale)
+        theme.set_font_preferences(font_style="retro", font_scale="large", antialias=True)
+        s_large = theme.render_text("RETRO FONT TEST", 8, (255, 255, 255))
+        self.assertGreater(s_large.get_width(), s_norm.get_width())
+        self.assertGreater(s_large.get_height(), s_norm.get_height())
+
+        # 3. Retro mode (extra large scale)
+        theme.set_font_preferences(font_style="retro", font_scale="xlarge", antialias=True)
+        s_xlarge = theme.render_text("RETRO FONT TEST", 8, (255, 255, 255))
+        self.assertGreater(s_xlarge.get_width(), s_large.get_width())
+
+        # 4. HD High-Definition clean font mode
+        theme.set_font_preferences(font_style="hd", font_scale="normal", antialias=True)
+        s_hd = theme.render_text("RETRO FONT TEST", 8, (255, 255, 255))
+        self.assertGreater(s_hd.get_height(), 10)
+        self.assertGreater(s_hd.get_width(), 40)
+
+    def test_fps_hud_and_settings_adjustments(self):
+        from src.ui.settings_view import SettingsView
+        theme = RetroTheme(PROJECT_ROOT / "assets")
+        sound = SoundManager(enabled=False, volume=0.8)
+        settings_view = SettingsView(theme, sound, self.config, self.rom_mgr, None, self.sys_mgr)
+
+        # 1. Test HUD rendering
+        surf = pygame.Surface((1024, 720))
+        theme.draw_fps_hud(surf, 60.0)
+        theme.draw_fps_hud(surf, 50.0)
+        theme.draw_fps_hud(surf, 30.0)
+
+        # 2. Toggle FPS option in SettingsView
+        items_def = settings_view._get_items_def()
+        fps_idx = [i for i, item in enumerate(items_def) if item[0] == "show_fps"][0]
+        initial_fps = self.config.get("video", "show_fps", default=False)
+        settings_view.selected_index = fps_idx
+        settings_view.handle_input("A")
+        self.assertNotEqual(initial_fps, self.config.get("video", "show_fps"))
+
+        # 3. Adjust Font Size option in SettingsView
+        self.config.set("video", "font_size", "normal")
+        theme.set_font_preferences(font_style="retro", font_scale="normal")
+        font_size_idx = [i for i, item in enumerate(items_def) if item[0] == "font_size"][0]
+        settings_view.selected_index = font_size_idx
+        settings_view.handle_input("RIGHT")
+        self.assertEqual(self.config.get("video", "font_size"), "large")
+        self.assertEqual(theme.font_scale, "large")
+
+        # 4. Adjust Font Style (HD / Retro)
+        self.config.set("video", "font_style", "retro")
+        theme.set_font_preferences(font_style="retro", font_scale="large")
+        font_style_idx = [i for i, item in enumerate(items_def) if item[0] == "font_style"][0]
+        settings_view.selected_index = font_style_idx
+        settings_view.handle_input("RIGHT")
+        self.assertEqual(self.config.get("video", "font_style"), "hd")
+        self.assertEqual(theme.font_style, "hd")
+
 if __name__ == "__main__":
     unittest.main()

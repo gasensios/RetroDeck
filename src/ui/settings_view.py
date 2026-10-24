@@ -24,7 +24,7 @@ class SettingsView:
         self.notification_msg = ""
         self.notification_timer = 0
 
-    def _get_items(self):
+    def _get_items_def(self):
         backend_val = self.config.get("emulator", "backend", default="internal")
         labels = {
             "internal": "MOTOR PROPIO (RETRODECK)",
@@ -35,27 +35,57 @@ class SettingsView:
         }
         backend = labels.get(backend_val, backend_val.upper())
         fs = "ACTIVADO" if self.config.get("emulator", "fullscreen_on_launch", default=True) else "DESACTIVADO"
+        
+        # FPS counter
+        fps = "ACTIVADO" if self.config.get("video", "show_fps", default=False) else "DESACTIVADO"
+        
+        # Font size / scale
+        fsize_val = self.config.get("video", "font_size", default="normal")
+        fsize_labels = {
+            "normal": "NORMAL (ESTÁNDAR)",
+            "large": "GRANDE (+25%)",
+            "xlarge": "EXTRA GRANDE (+50%)"
+        }
+        fsize = fsize_labels.get(fsize_val, "NORMAL (ESTÁNDAR)")
+        
+        # Font style
+        fstyle_val = self.config.get("video", "font_style", default="retro")
+        fstyle_labels = {
+            "retro": "PIXEL RETRO (8-BIT)",
+            "hd": "ALTA RESOLUCIÓN (HD)"
+        }
+        fstyle = fstyle_labels.get(fstyle_val, "PIXEL RETRO (8-BIT)")
+
+        # CRT
         crt = "ACTIVADO" if self.config.get("video", "crt_filter", default=True) else "DESACTIVADO"
+        crt_menus = "ACTIVADO (RETRO)" if self.config.get("video", "crt_filter_menus", default=False) else "DESACTIVADO (NÍTIDO)"
         crt_int = f"{self.config.get('video', 'crt_scanline_intensity', default=45)}%"
         sfx = "ACTIVADO" if self.config.get("audio", "sound_effects_enabled", default=True) else "DESACTIVADO"
         vol = f"{int(self.config.get('audio', 'volume', default=0.8) * 100)}%"
 
         return [
-            ("MOTOR EMULADOR (CORE)", backend, "Selecciona el motor de ejecución (Motor Propio o externo)"),
-            ("PANTALLA COMPLETA AL JUGAR", fs, "Inicia los juegos a pantalla completa automáticamente"),
-            ("FILTRO RETRO CRT (SCANLINES)", crt, "Activa el efecto visual de televisor de tubo clásico"),
-            ("INTENSIDAD SCANLINES CRT", crt_int, "Ajusta la oscuridad de las líneas de escaneado"),
-            ("EFECTOS DE SONIDO", sfx, "Activa los pitidos y chimes retro de la interfaz"),
-            ("VOLUMEN GENERAL", vol, "Ajusta el volumen del sonido de la interfaz"),
-            ("ABRIR CARPETA DE ROMS", "[ EJECUTAR ]", "Abre el explorador de archivos en la carpeta de ROMs"),
-            ("ABRIR CARPETA DE GUARDADOS", "[ EJECUTAR ]", "Abre la carpeta con tus partidas (.srm) y guardados"),
-            ("REESCANEAR JUEGOS Y PORTADAS", "[ RECARGAR ]", "Vuelve a escanear todos los juegos en la carpeta roms/snes"),
-            ("VOLVER AL MENÚ PRINCIPAL", "", "Regresar al selector de juegos")
+            ("backend", "MOTOR EMULADOR (CORE)", backend, "Selecciona el motor de ejecución (Motor Propio o externo)"),
+            ("fullscreen", "PANTALLA COMPLETA AL JUGAR", fs, "Inicia los juegos a pantalla completa automáticamente"),
+            ("show_fps", "CONTADOR DE FPS (HUD - F3)", fps, "Muestra los fotogramas por segundo en tiempo real para verificar caídas (Tecla F3)"),
+            ("font_size", "TAMAÑO DE TEXTO (FUENTE)", fsize, "Aumenta el tamaño de la letra para pantallas de portátiles"),
+            ("font_style", "ESTILO DE FUENTE", fstyle, "Alterna entre píxel arcade retro o tipografía nítida de alta resolución"),
+            ("crt_filter", "FILTRO RETRO CRT (JUEGOS)", crt, "Activa el efecto de televisor de tubo clásico en los juegos"),
+            ("crt_menus", "SCANLINES EN MENÚS", crt_menus, "Mantiene los menús limpios y nítidos o con efecto de tubo"),
+            ("crt_intensity", "INTENSIDAD SCANLINES CRT", crt_int, "Ajusta la oscuridad de las líneas de escaneado"),
+            ("sfx", "EFECTOS DE SONIDO", sfx, "Activa los efectos sonoros de navegación de la interfaz"),
+            ("volume", "VOLUMEN GENERAL", vol, "Ajusta el volumen general del sonido de RetroDeck"),
+            ("open_roms", "ABRIR CARPETA DE ROMS", "[ EJECUTAR ]", "Abre el explorador de archivos en la carpeta de ROMs"),
+            ("open_saves", "ABRIR CARPETA DE GUARDADOS", "[ EJECUTAR ]", "Abre la carpeta con tus partidas (.srm) y guardados"),
+            ("rescan", "REESCANEAR JUEGOS Y PORTADAS", "[ RECARGAR ]", "Vuelve a escanear todos los juegos de la consola activa"),
+            ("back", "VOLVER AL MENÚ PRINCIPAL", "", "Regresar al selector de juegos")
         ]
 
+    def _get_items(self):
+        return [(name, val, desc) for _, name, val, desc in self._get_items_def()]
+
     def handle_input(self, action: str) -> Optional[str]:
-        items = self._get_items()
-        num_items = len(items)
+        items_def = self._get_items_def()
+        num_items = len(items_def)
 
         if action == "UP":
             self.selected_index = (self.selected_index - 1) % num_items
@@ -67,21 +97,22 @@ class SettingsView:
             self.sound.play("nav")
             return None
 
-        elif action == "LEFT" or action == "RIGHT":
+        elif action in ("LEFT", "RIGHT"):
             self._adjust_option(self.selected_index, direction=1 if action == "RIGHT" else -1)
             return None
 
-        elif action == "A" or action == "START":
-            if self.selected_index == 9: # Volver
+        elif action in ("A", "START"):
+            key = items_def[self.selected_index][0]
+            if key == "back":
                 self.sound.play("back")
                 return "BACK_TO_BROWSER"
-            elif self.selected_index in [6, 7, 8]:
-                self._execute_action(self.selected_index)
+            elif key in ("open_roms", "open_saves", "rescan"):
+                self._execute_action(key)
             else:
                 self._adjust_option(self.selected_index, direction=1)
             return None
 
-        elif action == "B" or action == "MENU":
+        elif action in ("B", "MENU"):
             self.sound.play("back")
             return "BACK_TO_BROWSER"
 
@@ -89,42 +120,90 @@ class SettingsView:
 
     def _adjust_option(self, idx: int, direction: int):
         self.sound.play("select")
+        items_def = self._get_items_def()
+        key = items_def[idx][0]
         
         # 0: Backend
-        if idx == 0:
+        if key == "backend":
             backends = ["internal", "flatpak_snes9x", "snes9x", "retroarch", "custom"]
             curr = self.config.get("emulator", "backend", default="internal")
             curr_idx = backends.index(curr) if curr in backends else 0
             new_idx = (curr_idx + direction) % len(backends)
             self.config.set("emulator", "backend", backends[new_idx])
 
-        # 1: Fullscreen
-        elif idx == 1:
+        # Fullscreen
+        elif key == "fullscreen":
             curr = self.config.get("emulator", "fullscreen_on_launch", default=True)
             self.config.set("emulator", "fullscreen_on_launch", not curr)
 
-        # 2: CRT Filter
-        elif idx == 2:
+        # Show FPS
+        elif key == "show_fps":
+            curr = self.config.get("video", "show_fps", default=False)
+            new_val = not curr
+            self.config.set("video", "show_fps", new_val)
+            self._notify(f"Contador FPS: {'ACTIVADO' if new_val else 'DESACTIVADO'}")
+
+        # Font size
+        elif key == "font_size":
+            sizes = ["normal", "large", "xlarge"]
+            curr = self.config.get("video", "font_size", default="normal")
+            curr_i = sizes.index(curr) if curr in sizes else 0
+            new_i = (curr_i + direction) % len(sizes)
+            new_size = sizes[new_i]
+            self.config.set("video", "font_size", new_size)
+            self.theme.set_font_preferences(
+                font_style=self.config.get("video", "font_style", default="retro"),
+                font_scale=new_size,
+                antialias=self.config.get("video", "font_antialiasing", default=True)
+            )
+            labels = {"normal": "NORMAL", "large": "GRANDE (+25%)", "xlarge": "EXTRA GRANDE (+50%)"}
+            self._notify(f"Tamaño de letra: {labels.get(new_size, new_size)}")
+
+        # Font style
+        elif key == "font_style":
+            styles = ["retro", "hd"]
+            curr = self.config.get("video", "font_style", default="retro")
+            curr_i = styles.index(curr) if curr in styles else 0
+            new_i = (curr_i + direction) % len(styles)
+            new_style = styles[new_i]
+            self.config.set("video", "font_style", new_style)
+            self.theme.set_font_preferences(
+                font_style=new_style,
+                font_scale=self.config.get("video", "font_size", default="normal"),
+                antialias=self.config.get("video", "font_antialiasing", default=True)
+            )
+            style_lbl = "ALTA RESOLUCIÓN (HD)" if new_style == "hd" else "PIXEL RETRO (8-BIT)"
+            self._notify(f"Estilo fuente: {style_lbl}")
+
+        # CRT Filter
+        elif key == "crt_filter":
             curr = self.config.get("video", "crt_filter", default=True)
             self.config.set("video", "crt_filter", not curr)
 
-        # 3: CRT Intensity
-        elif idx == 3:
+        # CRT Menus
+        elif key == "crt_menus":
+            curr = self.config.get("video", "crt_filter_menus", default=False)
+            new_val = not curr
+            self.config.set("video", "crt_filter_menus", new_val)
+            self._notify(f"Scanlines en menús: {'ACTIVADO' if new_val else 'DESACTIVADO'}")
+
+        # CRT Intensity
+        elif key == "crt_intensity":
             intensities = [25, 45, 65, 85]
             curr = self.config.get("video", "crt_scanline_intensity", default=45)
             curr_i = intensities.index(curr) if curr in intensities else 1
             new_i = (curr_i + direction) % len(intensities)
             self.config.set("video", "crt_scanline_intensity", intensities[new_i])
 
-        # 4: Sound Effects
-        elif idx == 4:
+        # Sound Effects
+        elif key == "sfx":
             curr = self.config.get("audio", "sound_effects_enabled", default=True)
             new_val = not curr
             self.config.set("audio", "sound_effects_enabled", new_val)
             self.sound.enabled = new_val
 
-        # 5: Volume
-        elif idx == 5:
+        # Volume
+        elif key == "volume":
             volumes = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
             curr = round(self.config.get("audio", "volume", default=0.8), 1)
             curr_i = volumes.index(curr) if curr in volumes else 4
@@ -132,9 +211,9 @@ class SettingsView:
             self.config.set("audio", "volume", volumes[new_i])
             self.sound.set_volume(volumes[new_i])
 
-    def _execute_action(self, idx: int):
-        # 6: Open ROMs folder
-        if idx == 6:
+    def _execute_action(self, key: str):
+        # Open ROMs folder
+        if key == "open_roms":
             path = Path(self.config.get("paths", "roms")).resolve()
             try:
                 open_folder(path)
@@ -143,8 +222,8 @@ class SettingsView:
             except Exception as e:
                 self._notify(f"Error al abrir: {e}")
 
-        # 7: Open Saves folder
-        elif idx == 7:
+        # Open Saves folder
+        elif key == "open_saves":
             path = Path(self.config.get("paths", "saves")).resolve()
             try:
                 open_folder(path)
@@ -153,8 +232,8 @@ class SettingsView:
             except Exception as e:
                 self._notify(f"Error al abrir: {e}")
 
-        # 8: Rescan ROMs
-        elif idx == 8:
+        # Rescan ROMs
+        elif key == "rescan":
             if self.sys_mgr:
                 active_sys = self.sys_mgr.get_active_system()
                 roms = self.rom_mgr.scan_system(active_sys)
@@ -196,7 +275,7 @@ class SettingsView:
         self.theme.draw_retro_box(surface, panel_rect)
 
         # Draw rows
-        row_h = max(26, int((main_h - 60) / len(items)))
+        row_h = max(22, int((panel_rect.height - 54) / len(items)))
         curr_desc = ""
 
         for i, (name, val, desc) in enumerate(items):
@@ -204,8 +283,8 @@ class SettingsView:
             if is_sel:
                 curr_desc = desc
 
-            row_y = panel_rect.y + 12 + i * row_h
-            row_rect = pygame.Rect(panel_rect.x + 12, row_y, panel_rect.width - 24, row_h - 4)
+            row_y = panel_rect.y + 8 + i * row_h
+            row_rect = pygame.Rect(panel_rect.x + 12, row_y, panel_rect.width - 24, row_h - 3)
 
             row_bg = PALETTE["bg_card_selected"] if is_sel else (32, 30, 48)
             self.theme.draw_retro_box(surface, row_rect, bg_color=row_bg, selected=is_sel)
