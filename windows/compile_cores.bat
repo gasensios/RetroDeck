@@ -18,15 +18,19 @@ if %ERRORLEVEL% neq 0 echo [ERROR] Fallo al compilar libretrosnes.dll.
 
 echo.
 echo [2/2] Compilando puente Sega Mega Drive libmegadrive_bridge.dll...
-if not exist "libmegadrive.dll" goto :no_libmd
+if exist "genesis_plus_gx_libretro.dll" goto :compile_md
+if exist "libmegadrive.dll" goto :compile_md
+goto :no_libmd
 
-gcc -O3 -shared -fPIC -Wall -Wextra megadrive_bridge.c -L. -lmegadrive -o libmegadrive_bridge.dll -lm
+:compile_md
+if exist "genesis_plus_gx_libretro.dll" gcc -O3 -shared -fPIC -Wall -Wextra megadrive_bridge.c genesis_plus_gx_libretro.dll -o libmegadrive_bridge.dll -lm
+if not exist "genesis_plus_gx_libretro.dll" gcc -O3 -shared -fPIC -Wall -Wextra megadrive_bridge.c -L. -lmegadrive -o libmegadrive_bridge.dll -lm
 if %ERRORLEVEL% equ 0 echo [OK] libmegadrive_bridge.dll generado correctamente.
 if %ERRORLEVEL% neq 0 echo [ERROR] Fallo al compilar libmegadrive_bridge.dll.
 goto :done
 
 :no_libmd
-echo [AVISO] libmegadrive.dll no esta presente. Omitiendo puente de Mega Drive.
+echo [AVISO] genesis_plus_gx_libretro.dll no esta presente. Omitiendo puente de Mega Drive.
 goto :done
 
 :no_gcc

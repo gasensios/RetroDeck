@@ -36,11 +36,22 @@ class MegaDrivePlayer:
         self.lib_path = Path(lib_path).resolve()
         self.is_available = self.lib_path.exists()
 
-        if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
-            try:
-                os.add_dll_directory(str(self.lib_path.parent))
-            except Exception:
-                pass
+        if sys.platform == "win32":
+            parent_dir = str(self.lib_path.parent)
+            if hasattr(os, "add_dll_directory"):
+                try:
+                    os.add_dll_directory(parent_dir)
+                except Exception:
+                    pass
+            os.environ["PATH"] = parent_dir + os.pathsep + os.environ.get("PATH", "")
+
+            # Preload the core dependency (genesis_plus_gx_libretro.dll) into memory
+            core_dll = self.lib_path.parent / "genesis_plus_gx_libretro.dll"
+            if core_dll.exists():
+                try:
+                    ctypes.CDLL(str(core_dll))
+                except Exception as e:
+                    print(f"[MegaDrivePlayer] Preload {core_dll.name}: {e}")
 
         if self.is_available:
             try:
