@@ -74,6 +74,11 @@ class MegaDrivePlayer:
         self.width = 320
         self.height = 224
 
+        # Audio buffer for extraction
+        self.audio_max_samples = 4096 * 2
+        self.audio_buf = (ctypes.c_int16 * self.audio_max_samples)()
+        self.audio_bytes = b""
+
     def _setup_prototypes(self):
         self.lib.md_init.restype = ctypes.c_bool
         self.lib.md_deinit.restype = None
@@ -88,6 +93,10 @@ class MegaDrivePlayer:
         self.lib.md_get_frame_info.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
 
         self.lib.md_get_pixels.restype = ctypes.POINTER(ctypes.c_uint8)
+
+        if hasattr(self.lib, "md_get_samples"):
+            self.lib.md_get_samples.restype = ctypes.c_int
+            self.lib.md_get_samples.argtypes = [ctypes.POINTER(ctypes.c_int16), ctypes.c_int]
 
         self.lib.md_set_button.restype = None
         self.lib.md_set_button.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_bool]
@@ -158,10 +167,21 @@ class MegaDrivePlayer:
         if btn_id is not None:
             self.lib.md_set_button(player, btn_id, pressed)
 
-    def step_frame(self, enable_audio=False):
+    def step_frame(self, enable_audio=True):
         if not self.is_loaded:
             return
         self.lib.md_run_frame()
+        if enable_audio and hasattr(self.lib, "md_get_samples"):
+            count = self.lib.md_get_samples(self.audio_buf, self.audio_max_samples)
+            if count > 0:
+                self.audio_bytes = bytes(ctypes.string_at(self.audio_buf, count * 2))
+            else:
+                self.audio_bytes = b""
+        else:
+            self.audio_bytes = b""
+
+    def get_audio_bytes(self) -> bytes:
+        return self.audio_bytes
 
     def get_surface(self) -> pygame.Surface:
         w = ctypes.c_int(320)

@@ -68,10 +68,12 @@ class TestMultiSystem(unittest.TestCase):
         loaded = player.load_rom(md_roms[0].path, md_sys.saves_dir, md_sys.states_dir)
         self.assertTrue(loaded)
         for _ in range(30):
-            player.step_frame()
+            player.step_frame(enable_audio=True)
         surf = player.get_surface()
         self.assertGreater(surf.get_width(), 200)
         self.assertGreater(surf.get_height(), 150)
+        audio = player.get_audio_bytes()
+        self.assertIsNotNone(audio)
         
         # Test savestates on Mega Drive
         saved = player.save_state()

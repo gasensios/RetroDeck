@@ -85,8 +85,27 @@ static void bridge_video(const void *data, unsigned width, unsigned height, size
     }
 }
 
-static void bridge_audio_sample(int16_t left, int16_t right) {}
-static size_t bridge_audio_batch(const int16_t *data, size_t frames) { return frames; }
+// Audio buffer for 16-bit stereo PCM
+#define AUDIO_BUF_SAMPLES 16384
+static int16_t audio_buffer[AUDIO_BUF_SAMPLES];
+static int audio_sample_count = 0;
+
+static void bridge_audio_sample(int16_t left, int16_t right) {
+    if (audio_sample_count + 2 <= AUDIO_BUF_SAMPLES) {
+        audio_buffer[audio_sample_count++] = left;
+        audio_buffer[audio_sample_count++] = right;
+    }
+}
+
+static size_t bridge_audio_batch(const int16_t *data, size_t frames) {
+    if (!data || frames == 0) return 0;
+    int samples = (int)frames * 2;
+    if (audio_sample_count + samples <= AUDIO_BUF_SAMPLES) {
+        memcpy(audio_buffer + audio_sample_count, data, samples * sizeof(int16_t));
+        audio_sample_count += samples;
+    }
+    return frames;
+}
 static void bridge_input_poll(void) {}
 
 static int16_t bridge_input_state(unsigned port, unsigned device, unsigned index, unsigned id) {
@@ -96,6 +115,7 @@ static int16_t bridge_input_state(unsigned port, unsigned device, unsigned index
 
 // Public API for Python ctypes
 bool md_init(void) {
+    audio_sample_count = 0;
     retro_set_environment(bridge_env);
     retro_set_video_refresh(bridge_video);
     retro_set_audio_sample(bridge_audio_sample);
@@ -128,6 +148,9 @@ bool md_load_rom(const char *path, const uint8_t *data, size_t size) {
     info.meta = NULL;
 
     is_game_loaded = retro_load_game(&info);
+    if (is_game_loaded) {
+        audio_sample_count = 0;
+    }
     return is_game_loaded;
 }
 
@@ -150,6 +173,22 @@ void md_get_frame_info(int *w, int *h) {
 
 const uint8_t* md_get_pixels(void) {
     return frame_rgbx;
+}
+
+int md_get_samples(int16_t *out_data, int max_samples) {
+    if (!out_data || max_samples <= 0) return 0;
+    int count = audio_sample_count;
+    if (count > max_samples) count = max_samples;
+    if (count > 0) {
+        memcpy(out_data, audio_buffer, count * sizeof(int16_t));
+        if (audio_sample_count > count) {
+            memmove(audio_buffer, audio_buffer + count, (audio_sample_count - count) * sizeof(int16_t));
+            audio_sample_count -= count;
+        } else {
+            audio_sample_count = 0;
+        }
+    }
+    return count;
 }
 
 /*
