@@ -9,6 +9,117 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from src.core.system_manager import SystemInfo
 
+NEOGEO_DATABASE = {
+    "2020bb": "2020 Super Baseball",
+    "3countb": "3 Count Bout",
+    "alpham2": "Alpha Mission II / ASO II",
+    "androdun": "Andro Dunos",
+    "aof": "Art of Fighting",
+    "aof2": "Art of Fighting 2",
+    "aof3": "Art of Fighting 3: Path of the Warrior",
+    "bjourney": "Blue's Journey",
+    "blazstar": "Blazing Star",
+    "breakers": "Breakers",
+    "breakrev": "Breakers Revenge",
+    "bstars": "Baseball Stars Professional",
+    "bstars2": "Baseball Stars 2",
+    "burningf": "Burning Fight",
+    "crsword": "Crossed Swords",
+    "cyberlip": "Cyber-Lip",
+    "doubledr": "Double Dragon (Neo Geo)",
+    "fatfury1": "Fatal Fury: King of Fighters",
+    "fatfury2": "Fatal Fury 2",
+    "fatfursp": "Fatal Fury Special",
+    "fatfury3": "Fatal Fury 3: Road to the Final Victory",
+    "fbfrenzy": "Football Frenzy",
+    "galaxyfg": "Galaxy Fight: Universal Warrior",
+    "ganryu": "Ganryu / Musashi Ganryuki",
+    "garou": "Garou: Mark of the Wolves",
+    "ghostlop": "Ghostlop",
+    "goalx3": "Goal! Goal! Goal!",
+    "gowcaizr": "Voltage Fighter Gowcaizer",
+    "ironclad": "Ironclad / Choutetsu Brikin'ger",
+    "karnovr": "Karnov's Revenge",
+    "kof94": "The King of Fighters '94",
+    "kof95": "The King of Fighters '95",
+    "kof96": "The King of Fighters '96",
+    "kof97": "The King of Fighters '97",
+    "kof98": "The King of Fighters '98: The Slugfest",
+    "kof99": "The King of Fighters '99: Millennium Battle",
+    "kof2000": "The King of Fighters 2000",
+    "kof2001": "The King of Fighters 2001",
+    "kof2002": "The King of Fighters 2002: Challenge to Ultimate Battle",
+    "kof2003": "The King of Fighters 2003",
+    "kotm": "King of the Monsters",
+    "kotm2": "King of the Monsters 2",
+    "lastblad": "The Last Blade",
+    "lastbld2": "The Last Blade 2",
+    "lresort": "Last Resort",
+    "magdrop2": "Magical Drop II",
+    "magdrop3": "Magical Drop III",
+    "maglord": "Magician Lord",
+    "matrim": "Matrimelee / Shin Gouketsuji Ichizoku",
+    "mslug": "Metal Slug: Super Vehicle-001",
+    "mslug2": "Metal Slug 2",
+    "mslug3": "Metal Slug 3",
+    "mslug4": "Metal Slug 4",
+    "mslug5": "Metal Slug 5",
+    "mslugx": "Metal Slug X",
+    "mutnat": "Mutation Nation",
+    "nam1975": "NAM-1975",
+    "ncommand": "Ninja Commando",
+    "neobomba": "Neo Bomberman",
+    "neocup98": "Neo Geo Cup '98: The Road to the Victory",
+    "neodrift": "Neo Drift Out: New Technology",
+    "neomrdo": "Neo Mr. Do!",
+    "ninjamas": "Ninja Master's",
+    "overtop": "Over Top",
+    "pbobbl2n": "Puzzle Bobble 2 / Bust-A-Move Again",
+    "pbobble": "Puzzle Bobble / Bust-A-Move",
+    "pnyaa": "Pochi and Nyaa",
+    "preisl2": "Prehistoric Isle 2",
+    "pulstar": "Pulstar",
+    "puzzledp": "Puzzle De Pon!",
+    "rbff1": "Real Bout Fatal Fury",
+    "rbff2": "Real Bout Fatal Fury 2: The Newcomers",
+    "rbffspec": "Real Bout Fatal Fury Special",
+    "rotd": "Rage of the Dragons",
+    "sengoku": "Sengoku / Sengoku Denshou",
+    "sengoku2": "Sengoku 2",
+    "sengoku3": "Sengoku 3",
+    "samsho": "Samurai Shodown",
+    "samsho2": "Samurai Shodown II",
+    "samsho3": "Samurai Shodown III",
+    "samsho4": "Samurai Shodown IV: Amakusa's Revenge",
+    "samsho5": "Samurai Shodown V",
+    "samsh5sp": "Samurai Shodown V Special",
+    "shocktro": "Shock Troopers",
+    "shocktr2": "Shock Troopers: 2nd Squad",
+    "sonicwi2": "Aero Fighters 2 / Sonic Wings 2",
+    "sonicwi3": "Aero Fighters 3 / Sonic Wings 3",
+    "spinmast": "Spinmaster / Miracle Adventure",
+    "ssideki": "Super Sidekicks",
+    "ssideki2": "Super Sidekicks 2",
+    "ssideki3": "Super Sidekicks 3",
+    "stakwin": "Stakes Winner",
+    "stakwin2": "Stakes Winner 2",
+    "strhoop": "Street Hoop / Dunk Dream",
+    "superspy": "The Super Spy",
+    "topprowr": "Top Player's Golf",
+    "turfmast": "Neo Turf Masters / Big Tournament Golf",
+    "tws96": "Tecmo World Soccer '96",
+    "viewpoin": "Viewpoint",
+    "wakuwak7": "Waku Waku 7",
+    "wh1": "World Heroes",
+    "wh2": "World Heroes 2",
+    "wh2j": "World Heroes 2 Jet",
+    "whp": "World Heroes Perfect",
+    "wjammers": "Windjammers / Flying Power Disc",
+    "zedblade": "Zed Blade / Operation Ragnarok",
+    "zupapa": "ZuPaPa!",
+    "neogeo_demo": "Neo Geo Arcade Homebrew Demo",
+}
+
 class RomInfo:
     def __init__(self, filepath: Path, system_id: str):
         self.path = filepath
@@ -32,6 +143,20 @@ class RomInfo:
             self._parse_snes_header()
         elif system_id == "megadrive":
             self._parse_megadrive_header()
+        elif system_id == "neogeo":
+            self._parse_neogeo_header()
+
+    def _parse_neogeo_header(self):
+        """Identifies Neo Geo arcade sets and maps friendly titles."""
+        clean_stem = self.stem.lower()
+        if clean_stem in NEOGEO_DATABASE:
+            self.internal_title = NEOGEO_DATABASE[clean_stem]
+            self.title = self.internal_title
+            self.rom_type = "MVS / AES Arcade"
+            self.region = "Arcade Global"
+        else:
+            self.rom_type = "Neo Geo Arcade"
+            self.region = "Arcade"
 
     def _parse_snes_header(self):
         if self.extension not in {".smc", ".sfc", ".fig", ".swc"}:
@@ -169,6 +294,10 @@ class RomManager:
         unique_paths = sorted(list({p.resolve(): p for p in found_files}.values()), key=lambda p: p.name.lower())
 
         for p in unique_paths:
+            # neogeo.zip is the system BIOS archive, not a playable game
+            if system.id == "neogeo" and p.name.lower() in ("neogeo.zip", "neogeo.7z"):
+                continue
+
             rom = RomInfo(p, system.id)
             rel_key = f"{system.id}:{p.name}"
 

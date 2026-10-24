@@ -59,9 +59,21 @@ class SystemManager:
                 badge_color=(255, 204, 0),    # Sonic Gold
                 extensions=[".bin", ".gen", ".md", ".smd", ".zip", ".7z"],
                 project_root=self.project_root
+            ),
+            "neogeo": SystemInfo(
+                sys_id="neogeo",
+                name="Neo Geo",
+                full_name="SNK Neo Geo MVS / AES (Arcade System)",
+                company="SNK",
+                short="NEO GEO",
+                theme_color=(220, 38, 38),    # SNK Crimson Red
+                accent_color=(255, 208, 60),  # Arcade Gold
+                badge_color=(255, 55, 65),    # Arcade Neon Red
+                extensions=[".zip", ".7z", ".neo"],
+                project_root=self.project_root
             )
         }
-        self.system_order = ["snes", "megadrive"]
+        self.system_order = ["snes", "megadrive", "neogeo"]
         self.active_system_id = active_system_id if active_system_id in self.systems else "snes"
 
     def get_active_system(self) -> SystemInfo:

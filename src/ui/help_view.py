@@ -49,18 +49,17 @@ class HelpView:
         surface.blit(c1_t, (col1_x, curr_y))
         
         col1_lines = [
-            ("- roms/snes/ & megadrive/", "Juegos SNES (.smc) y Mega Drive (.bin)"),
-            ("- boxart/snes/ & megadrive/", "Portadas de juegos (.png, .jpg, .webp,"),
-            (" ", ".bmp asignables desde el menu [X/M])"),
-            ("- saves/snes/ & megadrive/", "Partidas guardadas de bateria (.srm)"),
-            ("- states/snes/ & megadrive/", "Puntos de guardado rapido (Savestates)"),
+            ("- roms/snes, megadrive, neogeo", "Juegos SNES (.smc), MD (.bin), NeoGeo (.zip)"),
+            ("- roms/neogeo/neogeo.zip", "BIOS Arcade requerida (ver LEEME_BIOS.txt)"),
+            ("- boxart/ (snes, megadrive, neogeo)", "Portadas (.png, .jpg, .webp, .bmp)"),
+            ("- saves/ & states/", "Batería SRAM y Savestates independientes"),
             ("- config/", "Ajustes, favoritos y mapeo de controles"),
             ("- Multiplataforma:", "RetroDeck.sh (Linux), RetroDeck.bat (Win)"),
             ("- docs/ (WebAssembly)", "Edicion web para jugar en GitHub Pages"),
             ("", ""),
             ("[PAD] COMPATIBILIDAD CON MANDOS", ""),
             ("- Mandos USB/Bluetooth (Xbox, PS4/PS5,", ""),
-            ("  8BitDo, mandos clasicos de PC, etc.)", ""),
+            ("  8BitDo, Arcade Sticks, mandos clasicos)", ""),
             ("- Reasigna botones en la seccion [C] Controles.", ""),
         ]
 
@@ -83,15 +82,15 @@ class HelpView:
         surface.blit(c2_t, (col2_x, curr_y))
 
         keys_table = [
-            ("Flechas (Arriba/Abajo/Izq/Der)", "D-Pad (Ambos sistemas)"),
+            ("Flechas (Arriba/Abajo/Izq/Der)", "D-Pad / Palanca (Todos los sistemas)"),
             ("SNES: Z, X, A, S, Q, W", "B, A, Y, X, L, R"),
-            ("MEGA DRIVE: A, S, D", "Botones A, B, C (3 botones)"),
-            ("MEGA DRIVE: Q, W, E", "Botones X, Y, Z (6 botones)"),
-            ("ENTER / R-SHIFT", "Start / Select (Mode)"),
+            ("MEGA DRIVE: A, S, D | Q, W, E", "Botones A, B, C | X, Y, Z"),
+            ("NEO GEO: A, S, D, F", "Botones Arcade A, B, C, D"),
+            ("ENTER / R-SHIFT", "Start / Select (Coin / Mode)"),
             ("ESCAPE", "Menu de Pausa / Atras"),
             ("", ""),
             ("ATAJOS EN EL MENU:", ""),
-            ("- [TAB] o [L / R]: Cambiar consola (SNES / MD)", ""),
+            ("- [TAB] o [L / R]: Cambiar consola (SNES / MD / NEOGEO)", ""),
             ("- [C]: Configurar controles por consola", ""),
             ("- [A / Enter / Espacio]: Jugar al juego", ""),
             ("- [F3]: Activar / desactivar contador FPS", ""),

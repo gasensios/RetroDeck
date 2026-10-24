@@ -1,0 +1,77 @@
+================================================================================
+           GUÍA LEGAL Y CONFIGURACIÓN DE BIOS PARA SNK NEO GEO (MVS / AES)
+================================================================================
+
+Este documento detalla la política legal y los requisitos para emular juegos de 
+SNK Neo Geo en RetroDeck respetando los Términos de Servicio de GitHub y las leyes
+de Propiedad Intelectual.
+
+--------------------------------------------------------------------------------
+1. POLÍTICA LEGAL Y DERECHOS DE AUTOR (CUMPLIMIENTO CON GITHUB)
+--------------------------------------------------------------------------------
+- Los núcleos de emulación utilizados en RetroDeck (FBAlpha 2012 Neo Geo / FBNeo) 
+  son proyectos de código abierto bajo licencia GPL-2.0 / Licencias Libres de Emulación.
+  El código fuente y sus wrappers son 100% legales para alojar y compartir en GitHub.
+
+- Sin embargo, las imágenes de la BIOS original de SNK Neo Geo (como 'sp-s2.sp1', 
+  'sm1.sm1', 'sfix.sfix', '000-lo.lo') son propiedad intelectual protegida por 
+  derechos de autor pertenecientes a SNK CORPORATION.
+
+- Por estricto cumplimiento legal con la DMCA y los Términos de Servicio de GitHub,
+  ESTE REPOSITORIO NO INCLUYE NI DISTRIBUYE NINGÚN ARCHIVO DE BIOS COMERCIAL 
+  PROPIETARIO NI ROMS COMERCIALES PROTEGIDAS POR COPYRIGHT.
+
+- El archivo 'neogeo.zip' está expresamente excluido en el fichero '.gitignore' para
+  prevenir cualquier subida accidental al repositorio remoto.
+
+--------------------------------------------------------------------------------
+2. CÓMO SUMINISTRAR TU PROPIA BIOS LEGAL
+--------------------------------------------------------------------------------
+Para poder arrancar juegos de Neo Geo en RetroDeck, debes colocar el paquete 
+de BIOS 'neogeo.zip' en esta misma carpeta:
+
+    RetroDeck/roms/neogeo/neogeo.zip
+
+¿De dónde obtener legalmente la BIOS?
+1. Volcado directo desde tu propia consola física Neo Geo AES o placa arcade MVS 
+   utilizando un lector de EPROMs o dispositivo de diagnóstico.
+2. Archivos suministrados legalmente a través de compras digitales de juegos 
+   de SNK Neo Geo (disponibles en tiendas como Steam, GOG o Humble Bundle como 
+   parte de las colecciones oficiales de SNK / DotEmu).
+
+--------------------------------------------------------------------------------
+3. CONTENIDO ESTÁNDAR DEL ARCHIVO 'neogeo.zip'
+--------------------------------------------------------------------------------
+El archivo 'neogeo.zip' es un fichero comprimido estándar de MAME/FBAlpha que debe 
+contener las ROMs del sistema, tales como:
+
+- sp-s2.sp1    (BIOS de sistema MVS Europa ver. 2)
+- sp-s.sp1     (BIOS de sistema MVS Europa ver. 1)
+- usa_2slt.sp1 (BIOS de sistema MVS USA)
+- sp-j2.sp1    (BIOS de sistema MVS Japón)
+- neo-po.bin   (BIOS AES Home)
+- sm1.sm1      (ROM de sonido del sistema Z80)
+- sfix.sfix    (ROM de fuentes de texto y caracteres fijos)
+- 000-lo.lo    (ROM generadora de gráficos de capas)
+
+*(Nota: Universe BIOS / Uni-Bios de Razoola también es compatible siempre que 
+provenga de una descarga autorizada para uso personal).*
+
+--------------------------------------------------------------------------------
+4. CÓMO AÑADIR JUEGOS Y CARÁTULAS
+--------------------------------------------------------------------------------
+- Coloca tus juegos de Neo Geo en formato comprimido (.zip) o (.neo) en:
+    RetroDeck/roms/neogeo/
+- Ejemplos de nombres de archivo soportados:
+    mslug.zip       -> Metal Slug: Super Vehicle-001
+    kof98.zip       -> The King of Fighters '98
+    garou.zip       -> Garou: Mark of the Wolves
+    blazstar.zip    -> Blazing Star
+- Las carátulas personalizadas (.png, .jpg) se ubican en:
+    RetroDeck/boxart/neogeo/<nombre_juego>.png
+- Las partidas guardadas (SRAM) y savestates se gestionan de forma automática en:
+    RetroDeck/saves/neogeo/
+    RetroDeck/states/neogeo/
+
+¡Disfruta de la mejor experiencia Arcade de 16-Bit en RetroDeck!
+================================================================================

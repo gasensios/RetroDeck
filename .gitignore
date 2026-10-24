@@ -8,24 +8,41 @@ roms/snes/*
 !roms/snes/.gitkeep
 roms/megadrive/*
 !roms/megadrive/.gitkeep
+roms/neogeo/*
+!roms/neogeo/.gitkeep
+!roms/neogeo/LEEME_BIOS.txt
+!roms/neogeo/neogeo_demo.zip
 
 # 2. Carátulas oficiales (Boxart con copyright)
 boxart/snes/*
 !boxart/snes/.gitkeep
 boxart/megadrive/*
 !boxart/megadrive/.gitkeep
+boxart/neogeo/*
+!boxart/neogeo/.gitkeep
 
 # 3. Partidas guardadas (Batería SRAM y volcados de RAM de juegos)
 saves/snes/*
 !saves/snes/.gitkeep
 saves/megadrive/*
 !saves/megadrive/.gitkeep
+saves/neogeo/*
+!saves/neogeo/.gitkeep
 
 # 4. Estados rápidos (Savestates y capturas de memoria)
 states/snes/*
 !states/snes/.gitkeep
 states/megadrive/*
 !states/megadrive/.gitkeep
+states/neogeo/*
+!states/neogeo/.gitkeep
+
+# 5. BIOS comerciales con Copyright (CRÍTICO para cumplimiento TOS GitHub / DMCA)
+# La BIOS propietaria de Neo Geo (neogeo.zip / uni-bios) NO se distribuye en el repositorio
+**/neogeo.zip
+**/neogeo.7z
+**/neogeo.rar
+bios/
 
 # 5. Ajustes y estadísticas de usuario local
 config/settings.json

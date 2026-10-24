@@ -25,19 +25,22 @@ class ControlsView:
         # Interactive UI Rectangles for Mouse Clicks
         self.snes_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.md_tab_rect = pygame.Rect(0, 0, 0, 0)
+        self.ng_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.kb_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.gp_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.button_row_rects = []
 
     def set_system(self, system_id: str):
-        if system_id in ("snes", "megadrive"):
+        if system_id in ("snes", "megadrive", "neogeo"):
             self.current_system = system_id
             self.selected_index = 0
             self.waiting_input = False
             self.waiting_btn_key = None
 
     def toggle_system(self):
-        self.current_system = "megadrive" if self.current_system == "snes" else "snes"
+        order = ["snes", "megadrive", "neogeo"]
+        curr_idx = order.index(self.current_system) if self.current_system in order else 0
+        self.current_system = order[(curr_idx + 1) % len(order)]
         self.selected_index = 0
         self.waiting_input = False
         self.waiting_btn_key = None
@@ -54,6 +57,10 @@ class ControlsView:
             return None
         elif self.md_tab_rect.collidepoint(pos) and self.current_system != "megadrive":
             self.set_system("megadrive")
+            self.sound.play("nav")
+            return None
+        elif self.ng_tab_rect.collidepoint(pos) and self.current_system != "neogeo":
+            self.set_system("neogeo")
             self.sound.play("nav")
             return None
 
@@ -167,21 +174,30 @@ class ControlsView:
         surface.blit(sub, (header_rect.x + 16, header_rect.y + 32))
 
         # Console Selection Tabs (Top Right of Header)
-        cs_tab_w = 140
+        cs_tab_w = 110
         cs_tab_h = 32
-        self.snes_tab_rect = pygame.Rect(header_rect.right - (cs_tab_w * 2 + 20), header_rect.y + 11, cs_tab_w, cs_tab_h)
-        self.md_tab_rect = pygame.Rect(header_rect.right - cs_tab_w - 10, header_rect.y + 11, cs_tab_w, cs_tab_h)
+        self.ng_tab_rect = pygame.Rect(header_rect.right - cs_tab_w - 10, header_rect.y + 11, cs_tab_w, cs_tab_h)
+        self.md_tab_rect = pygame.Rect(self.ng_tab_rect.left - cs_tab_w - 6, header_rect.y + 11, cs_tab_w, cs_tab_h)
+        self.snes_tab_rect = pygame.Rect(self.md_tab_rect.left - cs_tab_w - 6, header_rect.y + 11, cs_tab_w, cs_tab_h)
 
         is_snes = (self.current_system == "snes")
+        is_md = (self.current_system == "megadrive")
+        is_ng = (self.current_system == "neogeo")
+
         self.theme.draw_retro_box(surface, self.snes_tab_rect, selected=is_snes,
                                   bg_color=(50, 48, 70) if is_snes else (28, 25, 40))
-        self.theme.draw_retro_box(surface, self.md_tab_rect, selected=not is_snes,
-                                  bg_color=(50, 48, 70) if not is_snes else (28, 25, 40))
+        self.theme.draw_retro_box(surface, self.md_tab_rect, selected=is_md,
+                                  bg_color=(50, 48, 70) if is_md else (28, 25, 40))
+        self.theme.draw_retro_box(surface, self.ng_tab_rect, selected=is_ng,
+                                  bg_color=(55, 28, 35) if is_ng else (28, 25, 40))
 
-        snes_txt = self.theme.render_text("* SNES", 8, PALETTE["gold_highlight"] if is_snes else PALETTE["text_gray"])
-        md_txt = self.theme.render_text("* MEGA DRIVE", 8, PALETTE["gold_highlight"] if not is_snes else PALETTE["text_gray"])
+        snes_txt = self.theme.render_text("* SNES", 7, PALETTE["gold_highlight"] if is_snes else PALETTE["text_gray"])
+        md_txt = self.theme.render_text("* MEGA DRIVE", 7, PALETTE["gold_highlight"] if is_md else PALETTE["text_gray"])
+        ng_txt = self.theme.render_text("* NEO GEO", 7, PALETTE["gold_highlight"] if is_ng else PALETTE["text_gray"])
+
         surface.blit(snes_txt, (self.snes_tab_rect.x + (cs_tab_w - snes_txt.get_width()) // 2, self.snes_tab_rect.y + 9))
         surface.blit(md_txt, (self.md_tab_rect.x + (cs_tab_w - md_txt.get_width()) // 2, self.md_tab_rect.y + 9))
+        surface.blit(ng_txt, (self.ng_tab_rect.x + (cs_tab_w - ng_txt.get_width()) // 2, self.ng_tab_rect.y + 9))
 
         # Main Layout
         main_y = header_rect.bottom + 8
@@ -262,7 +278,14 @@ class ControlsView:
         center_diagram_x = diagram_rect.x + diagram_rect.width // 2
         center_diagram_y = diagram_rect.y + 110
 
-        if self.current_system == "megadrive":
+        if self.current_system == "neogeo":
+            self.theme.draw_neogeo_controller_preview(
+                surface,
+                center_diagram_x,
+                center_diagram_y,
+                highlight_btn=active_btn_to_show
+            )
+        elif self.current_system == "megadrive":
             self.theme.draw_megadrive_controller_preview(
                 surface,
                 center_diagram_x,
@@ -283,7 +306,12 @@ class ControlsView:
         self.theme.draw_retro_box(surface, helper_rect, bg_color=(22, 20, 34))
 
         if self.waiting_input:
-            sys_label = "SEGA MEGA DRIVE" if self.current_system == "megadrive" else "SUPER NINTENDO"
+            if self.current_system == "neogeo":
+                sys_label = "SNK NEO GEO"
+            elif self.current_system == "megadrive":
+                sys_label = "SEGA MEGA DRIVE"
+            else:
+                sys_label = "SUPER NINTENDO"
             msg_hdr = self.theme.render_text("ESPERANDO ENTRADA...", 10, PALETTE["gold_highlight"])
             msg_sub = self.theme.render_text(f"Asignando botón: {active_btn_to_show} ({sys_label})", 8, PALETTE["text_white"])
             msg_tip = self.theme.render_text("Presiona la tecla o botón deseado.", 7, PALETTE["accent_lavender"])
@@ -295,11 +323,13 @@ class ControlsView:
             surface.blit(msg_esc, (helper_rect.x + (helper_rect.width - msg_esc.get_width()) // 2, helper_rect.y + 76))
         else:
             info1 = self.theme.render_text("INSTRUCCIONES DE CONFIGURACION:", 8, PALETTE["gold_highlight"])
-            info2 = self.theme.render_text("- [TAB / L / R]: Cambiar consola (SNES <-> MEGA DRIVE)", 7, PALETTE["text_white"])
+            info2 = self.theme.render_text("- [TAB / L / R]: Cambiar consola (SNES / MD / NEO GEO)", 7, PALETTE["text_white"])
             info3 = self.theme.render_text("- [ENTER / A]: Asignar tecla o boton seleccionado", 7, PALETTE["text_white"])
             info4 = self.theme.render_text("- [< / >]: Alternar entre Teclado y Mando USB", 7, PALETTE["text_white"])
             
-            if self.current_system == "megadrive":
+            if self.current_system == "neogeo":
+                info5 = self.theme.render_text("- Neo Geo: 4 botones arcade A (Rojo), B (Amar.), C (Verde), D (Azul)", 7, PALETTE["accent_lavender"])
+            elif self.current_system == "megadrive":
                 info5 = self.theme.render_text("- Mega Drive: A, B, C (fila inf.) | X, Y, Z (fila sup. 6 botones)", 7, PALETTE["accent_lavender"])
             else:
                 info5 = self.theme.render_text("- SNES: Disposicion clasica en rombo B, A, Y, X + Gatillos L/R", 7, PALETTE["accent_lavender"])

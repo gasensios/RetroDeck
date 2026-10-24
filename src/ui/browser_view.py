@@ -23,6 +23,7 @@ class BrowserView:
         # Interactive Click Rectangles
         self.snes_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.md_tab_rect = pygame.Rect(0, 0, 0, 0)
+        self.ng_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.fps_btn_rect = pygame.Rect(0, 0, 0, 0)
         self.launch_btn_rect = pygame.Rect(0, 0, 0, 0)
         self.game_menu_btn_rect = pygame.Rect(0, 0, 0, 0)
@@ -57,10 +58,25 @@ class BrowserView:
 
         # Click System Switcher
         if self.snes_tab_rect.collidepoint(pos) and self.sys_mgr.get_active_system().id != "snes":
-            self.switch_system()
+            self.sys_mgr.set_system("snes")
+            self.rom_mgr.scan_system(self.sys_mgr.get_active_system())
+            self.selected_index = 0
+            self.scroll_offset = 0
+            self.sound.play("launch")
             return None
         elif self.md_tab_rect.collidepoint(pos) and self.sys_mgr.get_active_system().id != "megadrive":
-            self.switch_system()
+            self.sys_mgr.set_system("megadrive")
+            self.rom_mgr.scan_system(self.sys_mgr.get_active_system())
+            self.selected_index = 0
+            self.scroll_offset = 0
+            self.sound.play("launch")
+            return None
+        elif self.ng_tab_rect.collidepoint(pos) and self.sys_mgr.get_active_system().id != "neogeo":
+            self.sys_mgr.set_system("neogeo")
+            self.rom_mgr.scan_system(self.sys_mgr.get_active_system())
+            self.selected_index = 0
+            self.scroll_offset = 0
+            self.sound.play("launch")
             return None
 
         # Click Launch Button
@@ -155,10 +171,12 @@ class BrowserView:
         # Draw Brand Badge on Left
         badge_x = header_rect.x + 14
         badge_y = header_rect.y + 15
-        if active_sys.id == "snes":
-            self.theme.draw_snes_badge(surface, badge_x, badge_y)
-        else:
+        if active_sys.id == "neogeo":
+            self.theme.draw_neogeo_badge(surface, badge_x, badge_y)
+        elif active_sys.id == "megadrive":
             self.theme.draw_megadrive_badge(surface, badge_x, badge_y)
+        else:
+            self.theme.draw_snes_badge(surface, badge_x, badge_y)
 
         # Station Title & Marquee in Center
         title_x = badge_x + 115
@@ -171,23 +189,29 @@ class BrowserView:
         self.theme.draw_led(surface, title_x + 95, led_y, "60Hz NTSC", is_on=True, color="green")
         self.theme.draw_led(surface, title_x + 205, led_y, "16-BIT STEREO", is_on=True, color="green")
 
-        # Right Side: Interactive System Tabs [★ SNES] [★ MEGADRIVE] + [F3: FPS]
+        # Right Side: Interactive System Tabs [★ SNES] [★ MEGA DRIVE] [★ NEO GEO] + [F3: FPS]
         snes_active = (active_sys.id == "snes")
-        tab_w = 115
+        md_active = (active_sys.id == "megadrive")
+        ng_active = (active_sys.id == "neogeo")
+        tab_w = 98
         tab_h = 32
         tab_y = header_rect.y + 15
-        fps_w = 115
+        fps_w = 110
 
-        self.md_tab_rect = pygame.Rect(header_rect.right - tab_w - 10, tab_y, tab_w, tab_h)
-        self.snes_tab_rect = pygame.Rect(self.md_tab_rect.left - tab_w - 8, tab_y, tab_w, tab_h)
-        self.fps_btn_rect = pygame.Rect(self.snes_tab_rect.left - fps_w - 8, tab_y, fps_w, tab_h)
+        self.ng_tab_rect = pygame.Rect(header_rect.right - tab_w - 8, tab_y, tab_w, tab_h)
+        self.md_tab_rect = pygame.Rect(self.ng_tab_rect.left - tab_w - 6, tab_y, tab_w, tab_h)
+        self.snes_tab_rect = pygame.Rect(self.md_tab_rect.left - tab_w - 6, tab_y, tab_w, tab_h)
+        self.fps_btn_rect = pygame.Rect(self.snes_tab_rect.left - fps_w - 6, tab_y, fps_w, tab_h)
 
         self.theme.draw_retro_box(surface, self.snes_tab_rect,
                                   bg_color=(45, 40, 65) if snes_active else (28, 25, 40),
                                   selected=snes_active, with_screws=False)
         self.theme.draw_retro_box(surface, self.md_tab_rect,
-                                  bg_color=(45, 40, 65) if not snes_active else (28, 25, 40),
-                                  selected=not snes_active, with_screws=False)
+                                  bg_color=(45, 40, 65) if md_active else (28, 25, 40),
+                                  selected=md_active, with_screws=False)
+        self.theme.draw_retro_box(surface, self.ng_tab_rect,
+                                  bg_color=(55, 28, 35) if ng_active else (28, 25, 40),
+                                  selected=ng_active, with_screws=False)
 
         fps_active = getattr(self, "show_fps", False)
         self.theme.draw_retro_box(surface, self.fps_btn_rect,
@@ -195,15 +219,18 @@ class BrowserView:
                                   selected=fps_active, with_screws=False)
 
         snes_col = PALETTE["gold_highlight"] if snes_active else PALETTE["text_gray"]
-        md_col = PALETTE["gold_highlight"] if not snes_active else PALETTE["text_gray"]
+        md_col = PALETTE["gold_highlight"] if md_active else PALETTE["text_gray"]
+        ng_col = PALETTE["gold_highlight"] if ng_active else PALETTE["text_gray"]
         fps_col = PALETTE["led_green"] if fps_active else PALETTE["text_gray"]
 
-        snes_lbl = self.theme.render_text("* SNES", 8, snes_col)
-        md_lbl = self.theme.render_text("* MEGADRIVE", 8, md_col)
+        snes_lbl = self.theme.render_text("* SNES", 7, snes_col)
+        md_lbl = self.theme.render_text("* MEGADRIVE", 7, md_col)
+        ng_lbl = self.theme.render_text("* NEOGEO", 7, ng_col)
         fps_lbl = self.theme.render_text("[F3] FPS: ON" if fps_active else "[F3] FPS: OFF", 7, fps_col)
 
         surface.blit(snes_lbl, (self.snes_tab_rect.x + (tab_w - snes_lbl.get_width()) // 2, self.snes_tab_rect.y + (tab_h - snes_lbl.get_height()) // 2))
         surface.blit(md_lbl, (self.md_tab_rect.x + (tab_w - md_lbl.get_width()) // 2, self.md_tab_rect.y + (tab_h - md_lbl.get_height()) // 2))
+        surface.blit(ng_lbl, (self.ng_tab_rect.x + (tab_w - ng_lbl.get_width()) // 2, self.ng_tab_rect.y + (tab_h - ng_lbl.get_height()) // 2))
         surface.blit(fps_lbl, (self.fps_btn_rect.x + (fps_w - fps_lbl.get_width()) // 2, self.fps_btn_rect.y + (tab_h - fps_lbl.get_height()) // 2))
 
         # 2. Main Layout Split

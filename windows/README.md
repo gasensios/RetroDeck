@@ -42,16 +42,16 @@ RetroDeck utiliza el subsistema SDL2/Pygame con compatibilidad nativa para:
 * **Mandos de PlayStation (PS4 DualShock y PS5 DualSense):** Detección directa por USB o Bluetooth (compatible con Steam o DS4Windows).
 * **Mandos 8BitDo y mandos retro USB:** Detección de cruceta analógica y digital.
 
-Para personalizar cualquier botón o remapear los controles para SNES o Mega Drive, pulsa **`[C]`** dentro del emulador y navega con el diagrama interactivo de botones.
+Para personalizar cualquier botón o remapear los controles para SNES, Mega Drive o Neo Geo, pulsa **`[C]`** dentro del emulador y navega con el diagrama interactivo de botones.
 
 ---
 
 ## 🛠️ Compilación de Núcleos Nativos C en Windows (Opcional)
 
-Si deseas modificar el código C de los motores de emulación (`snes/` o `megadrive_bridge.c`) y recompilar las librerías dinámicas `.dll` en Windows:
+Si deseas modificar el código C de los motores de emulación (`snes/`, `megadrive_bridge.c` o `neogeo_bridge.c`) y recompilar las librerías dinámicas `.dll` en Windows:
 
 1. Instala un entorno GCC para Windows como **[MSYS2](https://www.msys2.org/)** o **[WinLibs MinGW-w64](https://winlibs.com/)**.
 2. Asegúrate de que `gcc` esté en tu variable de entorno PATH.
 3. Ejecuta con doble clic el script:
    👉 **`windows\compile_cores.bat`**
-4. Se generarán automáticamente `libretrosnes.dll` y `libmegadrive_bridge.dll` en la carpeta `src\emulator_core\`.
+4. Se generarán automáticamente `libretrosnes.dll`, `libmegadrive_bridge.dll` y `libneogeo_bridge.dll` en la carpeta `src\emulator_core\`.

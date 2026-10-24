@@ -38,9 +38,25 @@ MEGADRIVE_BUTTONS: List[Tuple[str, str]] = [
     ("MODE", "Mode"),
 ]
 
+# SNK Neo Geo Arcade Button layout (4-Button Arcade Stick)
+NEOGEO_BUTTONS: List[Tuple[str, str]] = [
+    ("UP", "Palanca Arriba"),
+    ("DOWN", "Palanca Abajo"),
+    ("LEFT", "Palanca Izquierda"),
+    ("RIGHT", "Palanca Derecha"),
+    ("A", "Botón A (Rojo / Golpe débil)"),
+    ("B", "Botón B (Amarillo / Patada débil)"),
+    ("C", "Botón C (Verde / Golpe fuerte)"),
+    ("D", "Botón D (Azul / Patada fuerte)"),
+    ("START", "Start (1P / Pausa)"),
+    ("SELECT", "Select / Insert Coin"),
+]
+
 def get_system_buttons(system_id: str) -> List[Tuple[str, str]]:
     """Returns the button definition list for the requested system."""
-    if system_id == "megadrive":
+    if system_id == "neogeo":
+        return NEOGEO_BUTTONS
+    elif system_id == "megadrive":
         return MEGADRIVE_BUTTONS
     return SNES_BUTTONS
 

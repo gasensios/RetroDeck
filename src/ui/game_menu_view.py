@@ -227,10 +227,12 @@ class GameMenuView:
 
         badge_x = header_rect.x + 14
         badge_y = header_rect.y + 13
-        if self.system.id == "snes":
-            self.theme.draw_snes_badge(surface, badge_x, badge_y)
-        else:
+        if self.system.id == "neogeo":
+            self.theme.draw_neogeo_badge(surface, badge_x, badge_y)
+        elif self.system.id == "megadrive":
             self.theme.draw_megadrive_badge(surface, badge_x, badge_y)
+        else:
+            self.theme.draw_snes_badge(surface, badge_x, badge_y)
 
         title_x = badge_x + 115
         menu_title = self.theme.render_text("AJUSTES Y GESTION DEL JUEGO", 11, PALETTE["gold_highlight"], (0, 0, 0))
@@ -289,7 +291,12 @@ class GameMenuView:
         cart_bay = pygame.Rect(inner_x, inner_y, inner_w, cart_bay_h)
 
         # Soft backlight
-        backlight_col = (70, 30, 90, 80) if self.system.id == "snes" else (20, 50, 110, 80)
+        if self.system.id == "neogeo":
+            backlight_col = (90, 20, 25, 80)
+        elif self.system.id == "snes":
+            backlight_col = (70, 30, 90, 80)
+        else:
+            backlight_col = (20, 50, 110, 80)
         backlight_surf = pygame.Surface((cart_bay.width, cart_bay.height), pygame.SRCALPHA)
         pygame.draw.ellipse(backlight_surf, backlight_col, (8, 8, cart_bay.width - 16, cart_bay.height - 16))
         surface.blit(backlight_surf, (cart_bay.x, cart_bay.y))

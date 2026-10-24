@@ -48,6 +48,16 @@ PALETTE = {
     "sega_red": (235, 45, 45),
     "sonic_gold": (255, 210, 30),
     
+    # SNK Neo Geo
+    "neogeo_red": (220, 38, 38),
+    "neogeo_gold": (255, 208, 60),
+    "neogeo_dark": (22, 12, 18),
+    "neogeo_dark_gray": (42, 40, 48),
+    "neogeo_btn_a": (235, 45, 45),     # Red
+    "neogeo_btn_b": (250, 205, 35),    # Yellow
+    "neogeo_btn_c": (50, 200, 90),     # Green
+    "neogeo_btn_d": (45, 140, 245),    # Blue
+    
     # LEDs
     "led_green": (60, 245, 100),
     "led_green_glow": (30, 160, 60, 90),
@@ -218,7 +228,10 @@ class RetroTheme:
         horizon_y = int(h * 0.58)
 
         # 1. Upper Sky Gradient
-        if system_id == "megadrive":
+        if system_id == "neogeo":
+            top_sky = (22, 10, 16)
+            hor_glow = (95, 20, 30)
+        elif system_id == "megadrive":
             top_sky = (8, 10, 20)
             hor_glow = (18, 48, 105)
         else:
@@ -252,7 +265,12 @@ class RetroTheme:
         grid_surf = pygame.Surface((w, floor_h), pygame.SRCALPHA)
 
         # Floor base gradient (dark ground)
-        grid_col = (0, 220, 255) if system_id == "megadrive" else (225, 45, 175)
+        if system_id == "neogeo":
+            grid_col = (255, 60, 70)
+        elif system_id == "megadrive":
+            grid_col = (0, 220, 255)
+        else:
+            grid_col = (225, 45, 175)
         
         # Horizontal perspective grid lines scrolling forward
         scroll_offset = (ticks * 0.0007) % 1.0
@@ -270,7 +288,7 @@ class RetroTheme:
         # Radiating perspective vertical lines meeting at center horizon
         cx = w // 2
         line_spacing = 72
-        v_alpha = 75 if system_id == "megadrive" else 65
+        v_alpha = 75 if system_id in ("megadrive", "neogeo") else 65
         for xb in range(-w // 2, w + w // 2, line_spacing):
             pygame.draw.line(
                 grid_surf,
@@ -283,7 +301,12 @@ class RetroTheme:
         surface.blit(grid_surf, (0, horizon_y))
 
         # 4. Bright Neon Horizon Strip
-        neon_strip_col = (100, 230, 255) if system_id == "megadrive" else (255, 140, 230)
+        if system_id == "neogeo":
+            neon_strip_col = (255, 210, 60)
+        elif system_id == "megadrive":
+            neon_strip_col = (100, 230, 255)
+        else:
+            neon_strip_col = (255, 140, 230)
         pygame.draw.line(surface, neon_strip_col, (0, horizon_y), (w, horizon_y), 2)
 
     def draw_retro_box(self, surface: pygame.Surface, rect: pygame.Rect, bg_color=None, border_color=None, selected=False, with_screws=True):
@@ -376,6 +399,28 @@ class RetroTheme:
         lbl = self.render_text("16-BIT", 8, PALETTE["sega_cyan"])
         surface.blit(lbl, (x + 36, y + 11))
 
+    def draw_neogeo_badge(self, surface: pygame.Surface, x: int, y: int):
+        """Draws the iconic SNK Neo Geo MAX 330 MEGA arcade badge."""
+        w, h = 100, 32
+        badge_rect = pygame.Rect(x, y, w, h)
+        pygame.draw.rect(surface, (28, 12, 16), badge_rect, border_radius=4)
+        pygame.draw.rect(surface, PALETTE["neogeo_gold"], badge_rect, width=1, border_radius=4)
+
+        # 4 glossy arcade button dots in angled arc formation (A: Red, B: Yellow, C: Green, D: Blue)
+        dots = [
+            (x + 9, y + 21, PALETTE["neogeo_btn_a"]),
+            (x + 15, y + 16, PALETTE["neogeo_btn_b"]),
+            (x + 21, y + 13, PALETTE["neogeo_btn_c"]),
+            (x + 27, y + 11, PALETTE["neogeo_btn_d"]),
+        ]
+        for bx, by, col in dots:
+            pygame.draw.circle(surface, col, (bx, by), 3)
+            pygame.draw.circle(surface, (10, 10, 10), (bx, by), 3, width=1)
+            surface.set_at((bx - 1, by - 1), (255, 255, 255))
+
+        lbl = self.render_text("NEO-GEO", 7, PALETTE["neogeo_gold"])
+        surface.blit(lbl, (x + 34, y + 11))
+
     def draw_led(self, surface: pygame.Surface, x: int, y: int, label: str = "POWER", is_on: bool = True, color: str = "green"):
         """Draws an authentic glowing arcade console LED indicator."""
         led_col = PALETTE["led_green"] if color == "green" else PALETTE["led_red"]
@@ -424,7 +469,9 @@ class RetroTheme:
 
     def draw_cartridge(self, surface: pygame.Surface, rect: pygame.Rect, system_id: str, title: str = "", custom_image: pygame.Surface = None):
         """Draws realistic 3D rendered cartridge with sticker reflection and drop shadow."""
-        if system_id == "megadrive":
+        if system_id == "neogeo":
+            self._draw_neogeo_cartridge(surface, rect, title, custom_image)
+        elif system_id == "megadrive":
             self._draw_megadrive_cartridge(surface, rect, title, custom_image)
         else:
             self._draw_snes_cartridge(surface, rect, title, custom_image)
@@ -540,6 +587,72 @@ class RetroTheme:
         # Molded "SEGA" logo relief text at the bottom
         sega_txt = self.render_text("SEGA", 7, (75, 80, 95))
         surface.blit(sega_txt, (x + (w - sega_txt.get_width()) // 2, y + h - 18))
+
+    def _draw_neogeo_cartridge(self, surface: pygame.Surface, rect: pygame.Rect, title: str, custom_image: pygame.Surface):
+        x, y, w, h = rect.x, rect.y, rect.width, rect.height
+
+        # Drop shadow underneath cartridge
+        shadow_rect = pygame.Rect(x + 6, y + h - 6, w - 12, 10)
+        pygame.draw.ellipse(surface, (8, 6, 14, 180), shadow_rect)
+
+        # Huge MVS/AES textured matte black cartridge body
+        body_color = (20, 18, 22)
+        pygame.draw.rect(surface, body_color, (x, y, w, h - 4), border_radius=6)
+        
+        # Outer bezel highlight & shadow
+        pygame.draw.rect(surface, (50, 48, 56), (x, y, w, h - 4), width=2, border_radius=6)
+        pygame.draw.line(surface, (80, 78, 88), (x + 4, y + 2), (x + w - 5, y + 2), 1)
+
+        # Prominent twin-cartridge handle grips on left & right
+        grip_w = max(7, int(w * 0.08))
+        pygame.draw.rect(surface, (32, 30, 38), (x + 4, y + 8, grip_w, h - 20), border_radius=3)
+        pygame.draw.rect(surface, (32, 30, 38), (x + w - grip_w - 4, y + 8, grip_w, h - 20), border_radius=3)
+        for i in range(4):
+            gy = y + 16 + (i * 12)
+            pygame.draw.line(surface, (15, 14, 18), (x + 6, gy), (x + 4 + grip_w - 2, gy), 2)
+            pygame.draw.line(surface, (15, 14, 18), (x + w - grip_w - 2, gy), (x + w - 6, gy), 2)
+
+        # Bottom connector notch
+        pygame.draw.rect(surface, (12, 12, 16), (x + int(w * 0.25), y + h - 12, int(w * 0.50), 8))
+
+        # Big arcade label area
+        label_rect = pygame.Rect(x + grip_w + 8, y + 14, w - (grip_w * 2) - 16, int(h * 0.68))
+        pygame.draw.rect(surface, (10, 10, 12), label_rect)
+
+        if custom_image:
+            scaled = pygame.transform.smoothscale(custom_image, (label_rect.width - 4, label_rect.height - 4))
+            surface.blit(scaled, (label_rect.x + 2, label_rect.y + 2))
+        else:
+            # Iconic SNK Red & Gold Neo Geo arcade style banner
+            pygame.draw.rect(surface, (35, 16, 22), (label_rect.x + 2, label_rect.y + 2, label_rect.width - 4, label_rect.height - 4))
+            
+            top_bar = pygame.Rect(label_rect.x + 4, label_rect.y + 4, label_rect.width - 8, 15)
+            pygame.draw.rect(surface, PALETTE["neogeo_red"], top_bar)
+            snk_banner = self.render_text("SNK NEO-GEO", 7, PALETTE["neogeo_gold"])
+            surface.blit(snk_banner, (top_bar.x + 4, top_bar.y + 3))
+
+            spec_bar = pygame.Rect(label_rect.x + 4, label_rect.y + 22, label_rect.width - 8, 12)
+            pygame.draw.rect(surface, (18, 14, 20), spec_bar)
+            spec_txt = self.render_text("MAX 330 MEGA", 6, PALETTE["gold_highlight"])
+            surface.blit(spec_txt, (spec_bar.x + (spec_bar.width - spec_txt.get_width()) // 2, spec_bar.y + 2))
+
+            short_title = title[:16] if len(title) > 16 else title
+            txt = self.render_text(short_title, 9, PALETTE["text_white"], (0, 0, 0))
+            txt_x = label_rect.x + (label_rect.width - txt.get_width()) // 2
+            txt_y = label_rect.y + (label_rect.height - txt.get_height()) // 2 + 10
+            surface.blit(txt, (txt_x, txt_y))
+
+        # Glossy diagonal shine overlay across label
+        sheen_surf = pygame.Surface((label_rect.width - 4, label_rect.height - 4), pygame.SRCALPHA)
+        pygame.draw.polygon(sheen_surf, (255, 255, 255, 38), [
+            (0, 0), (int(label_rect.width * 0.35), 0),
+            (0, int(label_rect.height * 0.70))
+        ])
+        surface.blit(sheen_surf, (label_rect.x + 2, label_rect.y + 2))
+
+        # Molded "SNK" logo relief text at the bottom
+        snk_txt = self.render_text("SNK", 7, (90, 85, 100))
+        surface.blit(snk_txt, (x + (w - snk_txt.get_width()) // 2, y + h - 18))
 
     def draw_snes_controller_preview(self, surface: pygame.Surface, center_x: int, center_y: int, highlight_btn: str = None):
         """Draws an authentic SNES controller diagram with button highlights."""
@@ -687,3 +800,93 @@ class RetroTheme:
             pygame.draw.circle(surface, (60, 64, 80), (bx, by), 12, width=2)
             lbl = self.render_text(name, 8, (0, 0, 0) if is_hl else PALETTE["text_white"])
             surface.blit(lbl, (bx - lbl.get_width()//2, by - lbl.get_height()//2))
+
+    def draw_neogeo_controller_preview(self, surface: pygame.Surface, center_x: int, center_y: int, highlight_btn: str = None):
+        """Draws an authentic SNK Neo Geo Arcade Stick diagram with 4-button curved layout."""
+        w, h = 340, 140
+        x = center_x - w // 2
+        y = center_y - h // 2
+
+        # Arcade Stick Heavy Chassis
+        body_color = (22, 20, 26)
+        border_col = (60, 58, 70)
+        pygame.draw.rect(surface, body_color, (x + 10, y + 8, w - 20, h - 16), border_radius=12)
+        pygame.draw.rect(surface, border_col, (x + 10, y + 8, w - 20, h - 16), width=2, border_radius=12)
+
+        # Industrial chassis bolts at corners
+        for bx, by in [(x + 18, y + 16), (x + w - 18, y + 16), (x + 18, y + h - 16), (x + w - 18, y + h - 16)]:
+            pygame.draw.circle(surface, PALETTE["screw_slot"], (bx, by), 3)
+            pygame.draw.circle(surface, PALETTE["screw_head"], (bx, by), 2)
+
+        # Neo Geo Brand Header Bar in center-top
+        logo_txt = self.render_text("NEO-GEO ARCADE STICK", 7, PALETTE["neogeo_gold"])
+        surface.blit(logo_txt, (center_x - logo_txt.get_width() // 2, y + 14))
+
+        # Left side: Classic Ball-top Arcade Joystick
+        joy_cx, joy_cy = x + 65, y + 74
+        # Dust cover / base ring
+        pygame.draw.circle(surface, (14, 14, 18), (joy_cx, joy_cy + 8), 28)
+        pygame.draw.circle(surface, (40, 42, 50), (joy_cx, joy_cy + 8), 28, width=2)
+        # Metallic shaft
+        pygame.draw.line(surface, (160, 165, 180), (joy_cx, joy_cy + 8), (joy_cx, joy_cy - 12), 5)
+        # Red ball-top
+        is_stick_hl = highlight_btn in ("UP", "DOWN", "LEFT", "RIGHT")
+        ball_col = PALETTE["gold_highlight"] if is_stick_hl else PALETTE["neogeo_btn_a"]
+        pygame.draw.circle(surface, ball_col, (joy_cx, joy_cy - 14), 16)
+        pygame.draw.circle(surface, (30, 10, 10), (joy_cx, joy_cy - 14), 16, width=2)
+        # Specular shine on ball
+        surface.set_at((joy_cx - 4, joy_cy - 18), (255, 255, 255))
+        surface.set_at((joy_cx - 5, joy_cy - 18), (255, 255, 255))
+        surface.set_at((joy_cx - 4, joy_cy - 17), (255, 255, 255))
+
+        # Directional arrows around joystick
+        dpad_dirs = [
+            ("UP", joy_cx, joy_cy - 36),
+            ("DOWN", joy_cx, joy_cy + 34),
+            ("LEFT", joy_cx - 36, joy_cy + 8),
+            ("RIGHT", joy_cx + 36, joy_cy + 8),
+        ]
+        for dname, dx, dy in dpad_dirs:
+            dcol = PALETTE["gold_highlight"] if highlight_btn == dname else PALETTE["text_gray"]
+            dtxt = self.render_text(dname[0], 7, dcol)
+            surface.blit(dtxt, (dx - dtxt.get_width() // 2, dy - dtxt.get_height() // 2))
+
+        # Center: SELECT (COIN) and START buttons
+        sel_color = PALETTE["gold_highlight"] if highlight_btn == "SELECT" else (48, 50, 62)
+        sta_color = PALETTE["gold_highlight"] if highlight_btn == "START" else (48, 50, 62)
+
+        sel_x, sel_y = x + 128, y + 68
+        sta_x, sta_y = x + 172, y + 68
+
+        pygame.draw.circle(surface, sel_color, (sel_x, sel_y), 8)
+        pygame.draw.circle(surface, (15, 15, 20), (sel_x, sel_y), 8, width=2)
+        sel_lbl = self.render_text("SEL", 6, PALETTE["gold_highlight"] if highlight_btn == "SELECT" else PALETTE["text_gray"])
+        surface.blit(sel_lbl, (sel_x - sel_lbl.get_width() // 2, sel_y + 11))
+
+        pygame.draw.circle(surface, sta_color, (sta_x, sta_y), 8)
+        pygame.draw.circle(surface, (15, 15, 20), (sta_x, sta_y), 8, width=2)
+        sta_lbl = self.render_text("START", 6, PALETTE["gold_highlight"] if highlight_btn == "START" else PALETTE["text_gray"])
+        surface.blit(sta_lbl, (sta_x - sta_lbl.get_width() // 2, sta_y + 11))
+
+        # Right side: 4 Iconic Curved Arcade Buttons (A=Red, B=Yellow, C=Green, D=Blue)
+        buttons = [
+            ("A", x + w - 108, y + 84, PALETTE["neogeo_btn_a"]),
+            ("B", x + w - 82,  y + 72, PALETTE["neogeo_btn_b"]),
+            ("C", x + w - 56,  y + 64, PALETTE["neogeo_btn_c"]),
+            ("D", x + w - 30,  y + 60, PALETTE["neogeo_btn_d"]),
+        ]
+        btn_radius = 12
+
+        for name, bx, by, col in buttons:
+            is_hl = (highlight_btn == name)
+            f_col = PALETTE["gold_highlight"] if is_hl else col
+            # Rim ring
+            pygame.draw.circle(surface, (16, 16, 20), (bx, by), btn_radius + 2)
+            pygame.draw.circle(surface, (45, 48, 60), (bx, by), btn_radius + 2, width=1)
+            # Button body
+            pygame.draw.circle(surface, f_col, (bx, by), btn_radius)
+            pygame.draw.circle(surface, (10, 10, 10), (bx, by), btn_radius, width=2)
+            # Button letter
+            lbl_col = (0, 0, 0) if is_hl or col == PALETTE["neogeo_btn_b"] else PALETTE["text_white"]
+            lbl = self.render_text(name, 8, lbl_col)
+            surface.blit(lbl, (bx - lbl.get_width() // 2, by - lbl.get_height() // 2))

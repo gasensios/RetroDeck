@@ -10,6 +10,7 @@ from typing import Optional
 from src.ui.retro_theme import PALETTE
 from src.emulator_core.snes_player import SnesPlayer
 from src.emulator_core.megadrive_player import MegaDrivePlayer
+from src.emulator_core.neogeo_player import NeoGeoPlayer
 from src.core.platform_utils import get_core_library_path
 
 class GameplayView:
@@ -23,9 +24,11 @@ class GameplayView:
         core_dir = project_root / "src" / "emulator_core"
         snes_lib = get_core_library_path(core_dir, "retrosnes")
         md_lib = get_core_library_path(core_dir, "megadrive_bridge")
+        ng_lib = get_core_library_path(core_dir, "neogeo_bridge")
 
         self.snes_player = SnesPlayer(snes_lib)
         self.md_player = MegaDrivePlayer(md_lib)
+        self.neogeo_player = NeoGeoPlayer(ng_lib)
         self.current_player = None
         
         self.active_rom = None
@@ -74,14 +77,23 @@ class GameplayView:
         saves_dir.mkdir(parents=True, exist_ok=True)
         states_dir.mkdir(parents=True, exist_ok=True)
 
-        if rom_info.system_id == "megadrive":
+        if rom_info.system_id == "neogeo":
+            self.current_player = self.neogeo_player
+        elif rom_info.system_id == "megadrive":
             self.current_player = self.md_player
         else:
             self.current_player = self.snes_player
 
         if not self.current_player or not getattr(self.current_player, "is_available", False):
-            sys_label = "Sega Mega Drive" if rom_info.system_id == "megadrive" else "Super Nintendo"
-            dll_name = "libmegadrive_bridge.dll" if rom_info.system_id == "megadrive" else "libretrosnes.dll"
+            if rom_info.system_id == "neogeo":
+                sys_label = "SNK Neo Geo"
+                dll_name = "libneogeo_bridge.dll"
+            elif rom_info.system_id == "megadrive":
+                sys_label = "Sega Mega Drive"
+                dll_name = "libmegadrive_bridge.dll"
+            else:
+                sys_label = "Super Nintendo"
+                dll_name = "libretrosnes.dll"
             self._notify(f"FALTA NÚCLEO NATIVO ({dll_name})", 180)
             print(f"[RetroDeck] Error: El núcleo para {sys_label} no está compilado ({dll_name}).")
             print("Para compilar en Windows ejecuta: windows\\compile_cores.bat")
@@ -89,8 +101,19 @@ class GameplayView:
 
         success = self.current_player.load_rom(rom_info.path, saves_dir, states_dir)
         if success:
-            sys_name = "SEGA MEGA DRIVE" if rom_info.system_id == "megadrive" else "SUPER NINTENDO"
+            if rom_info.system_id == "neogeo":
+                sys_name = "SNK NEO GEO"
+            elif rom_info.system_id == "megadrive":
+                sys_name = "SEGA MEGA DRIVE"
+            else:
+                sys_name = "SUPER NINTENDO"
             self._notify(f"{sys_name} INICIADO - [ESC] MENÚ PAUSA", 180)
+        else:
+            err = getattr(self.current_player, "error_message", "")
+            if err:
+                self._notify(err, 240)
+            else:
+                self._notify("ERROR AL CARGAR ROM", 180)
         return success
 
     def stop_game(self):
@@ -329,7 +352,12 @@ class GameplayView:
         surface.blit(pause_txt, (card_rect.x + (card_w - pause_txt.get_width()) // 2, card_rect.y + 16))
 
         if self.active_rom:
-            sys_tag = "[SEGA MEGADRIVE]" if self.active_rom.system_id == "megadrive" else "[SUPER NINTENDO]"
+            if self.active_rom.system_id == "neogeo":
+                sys_tag = "[SNK NEO GEO]"
+            elif self.active_rom.system_id == "megadrive":
+                sys_tag = "[SEGA MEGADRIVE]"
+            else:
+                sys_tag = "[SUPER NINTENDO]"
             tag_surf = self.theme.render_text(sys_tag, 7, PALETTE["accent_lavender"])
             surface.blit(tag_surf, (card_rect.x + (card_w - tag_surf.get_width()) // 2, card_rect.y + 40))
 

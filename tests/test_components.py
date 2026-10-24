@@ -26,6 +26,7 @@ from src.ui.controls_view import ControlsView
 from src.ui.gameplay_view import GameplayView
 from src.emulator_core.snes_player import SnesPlayer
 from src.emulator_core.megadrive_player import MegaDrivePlayer
+from src.emulator_core.neogeo_player import NeoGeoPlayer
 
 class TestMultiSystem(unittest.TestCase):
     def setUp(self):
@@ -38,6 +39,9 @@ class TestMultiSystem(unittest.TestCase):
         next_sys = self.sys_mgr.next_system()
         self.assertEqual(next_sys.id, "megadrive")
         self.assertEqual(next_sys.company, "SEGA")
+        ng_sys = self.sys_mgr.next_system()
+        self.assertEqual(ng_sys.id, "neogeo")
+        self.assertEqual(ng_sys.company, "SNK")
         back_snes = self.sys_mgr.next_system()
         self.assertEqual(back_snes.id, "snes")
 
@@ -117,13 +121,68 @@ class TestMultiSystem(unittest.TestCase):
         self.assertEqual(controls_view.current_system, "snes")
         controls_view.toggle_system()
         self.assertEqual(controls_view.current_system, "megadrive")
+        controls_view.toggle_system()
+        self.assertEqual(controls_view.current_system, "neogeo")
 
         screen = pygame.Surface((1024, 720))
-        # Draw Mega Drive controls
+        # Draw Neo Geo controls
         controls_view.draw(screen)
         controls_view.toggle_system()
         # Draw SNES controls
         controls_view.draw(screen)
+        controls_view.toggle_system()
+        # Draw Mega Drive controls
+        controls_view.draw(screen)
+
+    def test_neogeo_system_and_player(self):
+        ng_sys = self.sys_mgr.systems["neogeo"]
+        self.assertEqual(ng_sys.id, "neogeo")
+        self.assertEqual(ng_sys.company, "SNK")
+        self.assertIn(".zip", ng_sys.extensions)
+
+        # 1. Scan ROMs and verify demo detection
+        ng_roms = self.rom_mgr.scan_system(ng_sys)
+        self.assertGreater(len(ng_roms), 0, "Neo Geo demo ROM should be detected")
+        demo_rom = next((r for r in ng_roms if "demo" in r.stem.lower()), None)
+        self.assertIsNotNone(demo_rom)
+        self.assertEqual(demo_rom.title, "Neo Geo Arcade Homebrew Demo")
+
+        # 2. Test neogeo.zip is ignored as a game
+        fake_bios = ng_sys.roms_dir / "neogeo.zip"
+        try:
+            fake_bios.touch()
+            scanned_after_bios = self.rom_mgr.scan_system(ng_sys)
+            bios_in_roms = any(r.filename.lower() == "neogeo.zip" for r in scanned_after_bios)
+            self.assertFalse(bios_in_roms, "neogeo.zip must NEVER be added to playable games")
+        finally:
+            if fake_bios.exists():
+                fake_bios.unlink()
+
+        # 3. Test NeoGeoPlayer initialization
+        ng_lib = PROJECT_ROOT / "src" / "emulator_core" / "libneogeo_bridge.so"
+        player = NeoGeoPlayer(ng_lib)
+        self.assertTrue(player.is_available)
+        self.assertTrue(player.is_initialized)
+
+        # 4. Test button layouts
+        ng_btns = [b[0] for b in get_system_buttons("neogeo")]
+        self.assertIn("A", ng_btns)
+        self.assertIn("B", ng_btns)
+        self.assertIn("C", ng_btns)
+        self.assertIn("D", ng_btns)
+        self.assertIn("START", ng_btns)
+        self.assertIn("SELECT", ng_btns)
+
+        # 5. Visual theme drawing for Neo Geo
+        theme = RetroTheme(PROJECT_ROOT / "assets")
+        screen = pygame.Surface((1024, 720))
+        theme.draw_animated_retro_bg(screen, "neogeo", 120)
+        theme.draw_neogeo_badge(screen, 10, 10)
+        cart_rect = pygame.Rect(100, 100, 240, 220)
+        theme.draw_cartridge(screen, cart_rect, system_id="neogeo", title="Metal Slug")
+        theme.draw_neogeo_controller_preview(screen, 500, 400, highlight_btn="A")
+
+        player.unload()
 
     def test_megadrive_controls_in_gameplay(self):
         theme = RetroTheme(PROJECT_ROOT / "assets")

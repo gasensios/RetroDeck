@@ -107,6 +107,32 @@ DEFAULT_CONFIG = {
                 "dpad_axis_x": 0,
                 "dpad_axis_y": 1
             }
+        },
+        "neogeo": {
+            "keyboard": {
+                "UP": "UP",
+                "DOWN": "DOWN",
+                "LEFT": "LEFT",
+                "RIGHT": "RIGHT",
+                "A": "A",
+                "B": "S",
+                "C": "D",
+                "D": "F",
+                "START": "RETURN",
+                "SELECT": "RSHIFT",
+                "MENU": "ESCAPE"
+            },
+            "gamepad": {
+                "A": 0,
+                "B": 1,
+                "C": 2,
+                "D": 3,
+                "START": 7,
+                "SELECT": 6,
+                "MENU": 8,
+                "dpad_axis_x": 0,
+                "dpad_axis_y": 1
+            }
         }
     }
 }
@@ -176,7 +202,7 @@ class ConfigManager:
         return val
 
     def get_input_map(self, system_id: str, input_type: str) -> dict:
-        sys_key = "megadrive" if system_id == "megadrive" else "snes"
+        sys_key = system_id if system_id in ("megadrive", "neogeo") else "snes"
         val = self.get("input", sys_key, input_type)
         if isinstance(val, dict):
             return val
