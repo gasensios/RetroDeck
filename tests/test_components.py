@@ -51,9 +51,11 @@ class TestMultiSystem(unittest.TestCase):
         loaded = player.load_rom(snes_roms[0].path, snes_sys.saves_dir, snes_sys.states_dir)
         self.assertTrue(loaded)
         for _ in range(30):
-            player.step_frame()
+            player.step_frame(enable_audio=True)
         surf = player.get_surface()
         self.assertEqual(surf.get_size(), (512, 480))
+        audio = player.get_audio_bytes()
+        self.assertEqual(len(audio), 735 * 4)
         player.unload()
 
     def test_megadrive_rom_scanning_and_emulation(self):

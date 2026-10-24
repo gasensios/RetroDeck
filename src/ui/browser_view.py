@@ -24,6 +24,8 @@ class BrowserView:
         self.snes_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.md_tab_rect = pygame.Rect(0, 0, 0, 0)
         self.launch_btn_rect = pygame.Rect(0, 0, 0, 0)
+        self.game_menu_btn_rect = pygame.Rect(0, 0, 0, 0)
+        self.cart_rect = pygame.Rect(0, 0, 0, 0)
         self.item_rects = []
 
         self.notification_msg = ""
@@ -58,6 +60,12 @@ class BrowserView:
         # Click Launch Button
         if self.launch_btn_rect.collidepoint(pos):
             return self.handle_input("A")
+
+        # Click Game Menu Button or Cartridge Bay
+        if self.game_menu_btn_rect.collidepoint(pos) or self.cart_rect.collidepoint(pos):
+            if self.get_selected_rom():
+                self.sound.play("select")
+                return "OPEN_GAME_MENU"
 
         # Click on ROM list item
         for idx, rect in enumerate(self.item_rects):
@@ -331,13 +339,13 @@ class BrowserView:
 
         cart_w = min(bay_rect.width - 24, 275)
         cart_h = box_area_h - 14
-        cart_rect = pygame.Rect(
+        self.cart_rect = pygame.Rect(
             bay_rect.x + (bay_rect.width - cart_w) // 2,
             bay_rect.y + 6,
             cart_w,
             cart_h
         )
-        self.theme.draw_cartridge(surface, cart_rect, system_id=active_sys.id, title=rom.title, custom_image=box_image)
+        self.theme.draw_cartridge(surface, self.cart_rect, system_id=active_sys.id, title=rom.title, custom_image=box_image)
 
         # 2. Game Title Plate
         curr_y = bay_rect.bottom + 10
@@ -374,15 +382,23 @@ class BrowserView:
             if row_y >= specs_box.bottom - 12:
                 break
 
-        # 4. Big Arcade Launch Button (Pulsing Neon Border)
+        # 4. Action Buttons: Launch Button and Game Menu Button
         btn_h = 34
-        self.launch_btn_rect = pygame.Rect(inner_x, rect.bottom - btn_h - 10, inner_w, btn_h)
+        menu_btn_w = 125
+        launch_btn_w = inner_w - menu_btn_w - 8
+        self.launch_btn_rect = pygame.Rect(inner_x, rect.bottom - btn_h - 10, launch_btn_w, btn_h)
+        self.game_menu_btn_rect = pygame.Rect(self.launch_btn_rect.right + 8, rect.bottom - btn_h - 10, menu_btn_w, btn_h)
+
         btn_bg = PALETTE["btn_a_red"] if active_sys.id == "snes" else PALETTE["sega_blue"]
         self.theme.draw_retro_box(surface, self.launch_btn_rect, bg_color=btn_bg, selected=True, with_screws=False)
+        self.theme.draw_retro_box(surface, self.game_menu_btn_rect, bg_color=(38, 34, 52), selected=False, with_screws=False)
         
         short_name = getattr(active_sys, "short", getattr(active_sys, "name", "SISTEMA")).upper()
-        btn_txt = self.theme.render_text(f">> INICIAR EN {short_name} [A / ENTER] <<", 8, PALETTE["text_white"], (0, 0, 0))
+        btn_txt = self.theme.render_text(f">> JUGAR [{short_name}] <<", 8, PALETTE["text_white"], (0, 0, 0))
         surface.blit(btn_txt, (self.launch_btn_rect.x + (self.launch_btn_rect.width - btn_txt.get_width()) // 2, self.launch_btn_rect.y + 11))
+
+        menu_txt = self.theme.render_text("[ MENU (X/M) ]", 7, PALETTE["gold_highlight"])
+        surface.blit(menu_txt, (self.game_menu_btn_rect.x + (self.game_menu_btn_rect.width - menu_txt.get_width()) // 2, self.game_menu_btn_rect.y + 11))
 
     def _draw_footer(self, surface: pygame.Surface, rect: pygame.Rect):
         guide = "[A/ENTER] JUGAR   [X / M] MENU JUEGO   [TAB] CONSOLA   [Y] FAVORITO   [C] CONTROLES   [S] AJUSTES   [ESC] SALIR"

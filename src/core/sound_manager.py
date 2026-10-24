@@ -24,7 +24,7 @@ class SoundManager:
         try:
             import pygame
             if not pygame.mixer.get_init():
-                pygame.mixer.init(frequency=44100, size=-16, channels=1, buffer=1024)
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=1024)
             self.initialized = True
         except Exception:
             self.initialized = False

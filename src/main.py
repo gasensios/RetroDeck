@@ -159,12 +159,18 @@ class RetroApp:
                             selected_rom = self.browser_view.get_selected_rom()
                             if selected_rom:
                                 self._launch_rom(selected_rom)
+                        elif res == "OPEN_GAME_MENU":
+                            selected_rom = self.browser_view.get_selected_rom()
+                            if selected_rom:
+                                self.game_menu_view.set_rom(selected_rom, self.sys_mgr.get_active_system())
+                                self.current_state = "GAME_MENU"
+                                self.sound.play("select")
                         continue
                     elif event.type == pygame.KEYDOWN:
                         if event.key in (pygame.K_TAB, pygame.K_t):
                             self.browser_view.switch_system()
                             continue
-                        elif event.key in (pygame.K_m, pygame.K_o):
+                        elif event.key in (pygame.K_x, pygame.K_m, pygame.K_o):
                             selected = self.browser_view.get_selected_rom()
                             if selected:
                                 self.game_menu_view.set_rom(selected, self.sys_mgr.get_active_system())

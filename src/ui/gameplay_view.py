@@ -43,11 +43,29 @@ class GameplayView:
         self.hud_message = ""
         self.hud_timer = 0
 
+        # Emulator Audio Streaming
+        self.audio_accumulator = bytearray()
+        self.audio_chunk_size = 735 * 4 * 2  # 2 frames (5880 bytes ~ 33.3ms)
+        self.emu_channel = None
+        try:
+            if pygame.mixer.get_init():
+                self.emu_channel = pygame.mixer.Channel(0)
+        except Exception:
+            pass
+
     def start_game(self, rom_info) -> bool:
         self.active_rom = rom_info
         self.is_paused = False
         self.hud_message = ""
         self.hud_timer = 0
+        self.audio_accumulator.clear()
+        try:
+            if pygame.mixer.get_init():
+                if not self.emu_channel:
+                    self.emu_channel = pygame.mixer.Channel(0)
+                self.emu_channel.stop()
+        except Exception:
+            pass
 
         project_root = Path(__file__).resolve().parent.parent.parent
         saves_dir = project_root / "saves" / rom_info.system_id
@@ -75,6 +93,12 @@ class GameplayView:
         return success
 
     def stop_game(self):
+        if self.emu_channel:
+            try:
+                self.emu_channel.stop()
+            except Exception:
+                pass
+        self.audio_accumulator.clear()
         if self.current_player and self.current_player.is_loaded:
             self.current_player.unload()
         self.active_rom = None
@@ -207,7 +231,30 @@ class GameplayView:
 
     def update_frame(self):
         if not self.is_paused and self.current_player and self.current_player.is_loaded:
-            self.current_player.step_frame(enable_audio=False)
+            # 1. Step hardware emulation frame with audio enabled
+            self.current_player.step_frame(enable_audio=True)
+
+            # 2. Stream audio to Pygame mixer if available
+            if hasattr(self.current_player, "get_audio_bytes") and self.emu_channel:
+                try:
+                    raw_audio = self.current_player.get_audio_bytes()
+                    if raw_audio and len(raw_audio) > 0:
+                        self.audio_accumulator.extend(raw_audio)
+
+                        if len(self.audio_accumulator) >= self.audio_chunk_size:
+                            chunk = bytes(self.audio_accumulator[:self.audio_chunk_size])
+                            self.audio_accumulator = self.audio_accumulator[self.audio_chunk_size:]
+
+                            snd = pygame.mixer.Sound(buffer=chunk)
+                            vol = self.config.get("audio", "volume", default=0.8)
+                            snd.set_volume(vol)
+
+                            if not self.emu_channel.get_busy():
+                                self.emu_channel.play(snd)
+                            elif not self.emu_channel.get_queue():
+                                self.emu_channel.queue(snd)
+                except Exception:
+                    pass
 
     def draw(self, surface: pygame.Surface):
         w, h = surface.get_size()
