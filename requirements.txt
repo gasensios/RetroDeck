@@ -1,1 +1,4 @@
-pygame>=2.6.0
+# RetroDeck Dependencies
+# On Windows, pygame-ce provides official pre-built wheels for Python 3.10 - 3.14 (avoids C compiler requirement)
+pygame-ce>=2.5.0; sys_platform == 'win32'
+pygame>=2.6.0; sys_platform != 'win32'
