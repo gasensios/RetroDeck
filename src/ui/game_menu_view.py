@@ -12,6 +12,7 @@ from typing import Optional, List
 from src.ui.retro_theme import PALETTE
 from src.core.rom_manager import RomInfo
 from src.core.system_manager import SystemInfo
+from src.core.platform_utils import open_folder, pick_image_file
 
 class GameMenuView:
     def __init__(self, theme, sound_manager, rom_manager, config_manager):
@@ -133,8 +134,7 @@ class GameMenuView:
         # 4. Open Boxart Directory in OS file manager
         elif key == "open_boxart_dir":
             try:
-                self.system.boxart_dir.mkdir(parents=True, exist_ok=True)
-                subprocess.Popen(["xdg-open", str(self.system.boxart_dir.resolve())])
+                open_folder(self.system.boxart_dir)
                 self._notify(f"Abriendo {self.system.boxart_dir.name}/...")
                 self.sound.play("select")
             except Exception as e:
@@ -169,8 +169,7 @@ class GameMenuView:
         # 8. Open ROM Directory
         elif key == "open_rom_dir":
             try:
-                self.system.roms_dir.mkdir(parents=True, exist_ok=True)
-                subprocess.Popen(["xdg-open", str(self.system.roms_dir.resolve())])
+                open_folder(self.system.roms_dir)
                 self._notify(f"Abriendo {self.system.roms_dir.name}/...")
                 self.sound.play("select")
             except Exception as e:
@@ -190,34 +189,10 @@ class GameMenuView:
         return None
 
     def _pick_image_dialog(self) -> Optional[str]:
-        """Opens native Linux file selection dialog for images."""
-        filters = "*.png *.jpg *.jpeg *.webp *.bmp *.PNG *.JPG *.JPEG *.WEBP *.BMP"
-        
-        # 1. Try zenity (Gnome / standard GTK Linux dialog)
-        try:
-            res = subprocess.run([
-                "zenity", "--file-selection",
-                f"--title=Seleccionar Caratula para {self.rom.title}",
-                f"--file-filter=Imagenes ({filters}) | {filters}",
-                "--file-filter=Todos los archivos | *"
-            ], capture_output=True, text=True, timeout=60)
-            if res.returncode == 0 and res.stdout.strip():
-                return res.stdout.strip()
-        except Exception:
-            pass
-
-        # 2. Try kdialog (KDE / Qt Linux dialog)
-        try:
-            res = subprocess.run([
-                "kdialog", "--getopenfilename", ".",
-                f"{filters}|Archivos de Imagen"
-            ], capture_output=True, text=True, timeout=60)
-            if res.returncode == 0 and res.stdout.strip():
-                return res.stdout.strip()
-        except Exception:
-            pass
-
-        return None
+        """Opens native file selection dialog for images (Linux / Windows / Mac)."""
+        title = f"Seleccionar Caratula para {self.rom.title}" if self.rom else "Seleccionar Caratula"
+        initial = self.system.boxart_dir if self.system else None
+        return pick_image_file(title=title, initial_dir=initial)
 
     def _apply_custom_boxart(self, src_file: str):
         path = Path(src_file)

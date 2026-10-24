@@ -5,6 +5,7 @@ Provides 60 FPS video, audio, joypad, SRAM, and savestates.
 """
 
 import os
+import sys
 import ctypes
 from pathlib import Path
 import pygame
@@ -35,6 +36,12 @@ class MegaDrivePlayer:
         self.lib_path = Path(lib_path).resolve()
         if not self.lib_path.exists():
             raise FileNotFoundError(f"Mega Drive bridge not found at: {self.lib_path}")
+
+        if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
+            try:
+                os.add_dll_directory(str(self.lib_path.parent))
+            except Exception:
+                pass
 
         self.lib = ctypes.CDLL(str(self.lib_path))
         self._setup_prototypes()

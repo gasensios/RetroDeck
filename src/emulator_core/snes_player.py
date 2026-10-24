@@ -33,6 +33,12 @@ class SnesPlayer:
         if not self.lib_path.exists():
             raise FileNotFoundError(f"Core library not found at: {self.lib_path}")
 
+        if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
+            try:
+                os.add_dll_directory(str(self.lib_path.parent))
+            except Exception:
+                pass
+
         self.lib = ctypes.CDLL(str(self.lib_path))
         self._setup_prototypes()
         

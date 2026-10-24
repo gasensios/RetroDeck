@@ -1,10 +1,15 @@
-# 🎮 RetroDeck - Emulador Multi-Sistema Retro para Linux (SNES & Sega Mega Drive)
+# 🎮 RetroDeck - Estación de Emulación Multi-Sistema de 16 Bits (Linux, Windows y Web)
 
-**RetroDeck** es una estación de juegos retro para **Super Nintendo (SNES)** y **Sega Mega Drive / Genesis** completamente **autónoma y multi-sistema**, con motores de emulación propios en C de alto rendimiento y una interfaz gráfica artística inspirada en los salones recreativos (Arcade) y consolas de 16 bits de los años 80 y 90 (fondo Mode 7 neón, chasis metálico con tornillos remachados, badges originales y bahía de cartuchos 3D).
+**RetroDeck** es una plataforma de juegos retro para **Super Nintendo (SNES)** y **Sega Mega Drive / Genesis** completamente **autónoma, multiplataforma y multi-sistema**, con motores de emulación propios en C de alto rendimiento y una interfaz gráfica artística inspirada en los salones recreativos (Arcade) y consolas de 16 bits de los años 80 y 90 (fondo Mode 7 neón en perspectiva, chasis metálico con tornillos remachados, badges oficiales y bahía de cartuchos 3D).
 
-> 🌐 **¿Quieres jugar directamente en tu navegador?**  
-> ¡Prueba la versión WebAssembly online sin instalar nada en GitHub Pages!  
-> 🕹️ **[Probar RetroDeck Web Online](https://gasensios.github.io/RetroDeck/)**
+El proyecto está diseñado y diferenciado para disfrutarse en **tres plataformas principales**:
+1. 🐧 **Versión Linux (Nativa):** Máximo rendimiento mediante núcleos en C (`.so`) y lanzador interactivo.
+2. 🪟 **Versión Windows (Nativa):** Doble clic con instalador virtual integrado (`.bat` / `.vbs`) y opción de empaquetado a `.exe`.
+3. 🌐 **Versión Web (GitHub Pages):** Ejecución instantánea en el navegador a 60 FPS mediante WebAssembly sin instalar nada.
+
+> 🌐 **¿Quieres jugar ahora mismo desde tu navegador?**  
+> ¡Prueba la versión WebAssembly online sin descargar nada!  
+> 🕹️ **[Jugar a RetroDeck Web Online](https://gasensios.github.io/RetroDeck/)**
 
 ---
 
@@ -17,21 +22,37 @@
 
 ---
 
-## 📁 Estructura Multi-Sistema de Carpetas
+## 📁 Estructura del Repositorio y Diferenciación Multiplataforma
 
 ```text
 Retro_Games/
-├── RetroDeck.sh               # 🚀 Ejecutable principal
+│
+├── RetroDeck.sh               # 🐧 Lanzador ejecutable nativo para Linux
 ├── RetroDeck.desktop          # 🖥️ Lanzador para el escritorio Linux
+├── RetroDeck.bat              # 🪟 Lanzador automático para Windows (doble clic)
+├── RetroDeck.vbs              # 🪟 Lanzador silencioso sin consola para Windows
 ├── TUTORIAL.md                # 📘 Manual completo de uso y arquitectura
+├── README.md                  # 📄 Ficha técnica y guía multiplataforma
+├── .gitignore                 # 🛡️ Protección de Git (ignora ROMs, saves y binarios)
+│
+├── windows/                   # 🪟 Utilidades exclusivas para Windows
+│   ├── README.md              # 📖 Guía rápida para usuarios de Windows
+│   ├── compile_cores.bat      # ⚙️ Script de compilación de DLLs con MinGW/GCC
+│   └── build_exe.bat          # 📦 Generador de ejecutable portátil RetroDeck.exe
+│
+├── docs/                      # 🌐 Versión WebAssembly para GitHub Pages
+│   ├── index.html             # 🕹️ Interfaz web del emulador arcade
+│   ├── style.css              # 🎨 Estética synthwave y filtro CRT web
+│   ├── retrodeck-web.js       # ⚡ Motor WebAssembly y Gamepad API
+│   └── assets/                # 📦 Demos homebrew y fuentes web
 │
 ├── roms/
 │   ├── snes/                  # 📂 Juegos de Super Nintendo (.smc, .sfc)
 │   └── megadrive/             # 📂 Juegos de Sega Mega Drive (.bin, .md, .gen)
 │
 ├── boxart/
-│   ├── snes/                  # 🖼️ Carátulas de SNES
-│   └── megadrive/             # 🖼️ Carátulas de Mega Drive
+│   ├── snes/                  # 🖼️ Carátulas de SNES (.png, .jpg, .webp)
+│   └── megadrive/             # 🖼️ Carátulas de Mega Drive (.png, .jpg, .webp)
 │
 ├── saves/
 │   ├── snes/                  # 💾 Partidas de batería SNES (.srm)
@@ -44,69 +65,85 @@ Retro_Games/
 ├── src/
 │   ├── emulator_core/         # 🧠 Motores nativos C (SNES y Mega Drive)
 │   ├── ui/                    # 🎨 Menús, selector de sistema y juego
-│   └── core/                  # 🎛️ Gestores de entrada, sistemas y sonido
+│   └── core/                  # 🎛️ Gestores de entrada, plataformas y sonido
 └── assets/                    # 📦 Fuentes, sonidos retro, iconos y capturas
-    └── screenshots/           # 📸 Capturas de pantalla de la interfaz
+    └── screenshots/           # 📸 Capturas de pantalla oficiales
 ```
 
 ---
 
-## 🚀 Cómo Jugar y Cambiar de Sistema
+## 🚀 Cómo Jugar en Cada Versión
 
-Ejecuta el lanzador:
-```bash
-./RetroDeck.sh
-```
+### 🐧 1. Cómo Jugar en Linux (Nativo)
 
-### 🔄 Selector de Consola y Opciones en el Menú
-- Pulsa **`[TAB]`** (o los botones **`[L]` / `[R]`** en mando) para alternar instantáneamente entre **Super Nintendo** y **Sega Mega Drive**.
-- La interfaz cambiará automáticamente de colores, carátulas, cartuchos 3D y catálogo de juegos.
-- Pulsa **`[A]`** o **`[ENTER]`** para iniciar la ROM seleccionada.
-- Pulsa **`[X]`** (en mando) o **`[M]`** (en teclado) para abrir el **Menú de Opciones del Juego** (asignación de carátulas `.png`, `.jpg`, `.webp`, `.bmp`, copias de seguridad de partidas `.srm` y estadísticas).
-
----
-
-## 🕹️ Controles Durante la Partida
-
-* **`[F5]`**: Guardar Estado Rápido (*Quick Save*).
-* **`[F7]`**: Cargar Estado Rápido (*Quick Load*).
-* **`[F11]`**: Alternar Pantalla Completa.
-* **`[ESC]`**: **Menú de Pausa retro integrado** (Continuar, Guardar, Cargar, Reiniciar consola o Volver al menú de juegos).
-
----
-
-## 🌐 Versión WebAssembly para GitHub Pages
-
-RetroDeck cuenta con una versión web interactiva en la carpeta `docs/`, optimizada con **WebAssembly (WASM)** y lista para ejecutarse en GitHub Pages:
-
-* **Acceso instantáneo sin descargas:** Puedes jugar desde cualquier navegador en PC, Mac o móvil en:  
-  👉 **`https://gasensios.github.io/RetroDeck/`**
-* **Arrastrar y soltar ROMs (Drag & Drop):** Arrastra cualquier archivo `.smc`, `.sfc`, `.bin`, `.gen`, `.md` sobre la pantalla del emulador para cargarlo al vuelo.
-* **Demos integradas:** Incluye demos de juegos homebrew libres (*Astrohawk* para SNES y *BombX* para Mega Drive) listas para jugar con un clic.
-* **Soporte de Mandos USB / Bluetooth:** Detecta automáticamente mandos de Xbox, PlayStation o mandos retro mediante la *Web Gamepad API*.
-* **Filtro CRT en tiempo real:** Activa o desactiva las líneas de escaneado y la curvatura de tubo clásico.
-
-### ⚙️ Cómo activar GitHub Pages en tu cuenta:
-1. Crea tu repositorio en GitHub con el nombre `RetroDeck` (o el que prefieras) bajo tu cuenta `gasensios`.
-2. Sube el código:
+1. Abre tu terminal en la carpeta del proyecto y dale permisos al lanzador (solo la primera vez):
    ```bash
-   git remote add origin https://github.com/gasensios/RetroDeck.git
-   git add .
-   git commit -m "RetroDeck: Edición dual Desktop (Linux) y Web (WebAssembly)"
-   git push -u origin main
+   chmod +x RetroDeck.sh
    ```
-3. En GitHub, entra en tu repositorio y dirígete a **Settings** > **Pages**.
-4. En **Build and deployment** > **Source**, selecciona **Deploy from a branch** -> Rama `main` -> Carpeta `/docs` -> Pulsa **Save**.
-5. En un par de minutos, tu emulador estará activo en la red.
+2. Ejecuta el programa:
+   ```bash
+   ./RetroDeck.sh
+   ```
+   *El script creará automáticamente el entorno virtual `.venv` e instalará dependencias si no existen.*
+3. Si lo prefieres, copia el archivo `RetroDeck.desktop` a tu escritorio o a `~/.local/share/applications/` para tener un acceso directo en el menú de aplicaciones de tu distribución Linux.
+
+---
+
+### 🪟 2. Cómo Jugar en Windows (Nativo)
+
+1. **Requisito:** Tener instalado [Python 3.10 o superior](https://www.python.org/downloads/) asegurándote de marcar la casilla **`[X] Add python.exe to PATH`** durante la instalación.
+2. **Para jugar al instante:**
+   * Haz doble clic sobre **`RetroDeck.bat`** (creará el entorno `.venv` e instalará `pygame` automáticamente la primera vez).
+   * O haz doble clic sobre **`RetroDeck.vbs`** para jugar en modo silencioso sin que quede abierta la ventana negra de la consola CMD de Windows.
+3. **Mandos en Windows:** Conecta cualquier mando de Xbox (One/Series XInput), PlayStation (DualShock/DualSense) o 8BitDo; se reconocen automáticamente al arrancar.
+4. **Empaquetar como `.exe` portátil (Opcional):**
+   * Haz doble clic en `windows\build_exe.bat` para compilar un `RetroDeck.exe` totalmente autónomo dentro de la carpeta `dist\RetroDeck\`.
+5. Para más detalles técnicos sobre Windows, consulta [`windows/README.md`](file:///home/gasensio/Documentos/Retro_Games/windows/README.md).
+
+---
+
+### 🌐 3. Cómo Jugar en la Web (GitHub Pages / WebAssembly)
+
+No requiere descargar ni instalar absolutamente nada en tu ordenador:
+
+1. Entra con tu navegador (Chrome, Firefox, Edge, Safari o navegadores móviles) a:  
+   👉 **`https://gasensios.github.io/RetroDeck/`**
+2. **Cargar juegos:**
+   * Haz clic sobre las demos de la pantalla (**`ASTROHAWK`** para SNES o **`BOMBX`** para Mega Drive) para jugar de inmediato.
+   * O **arrastra y suelta tu propio archivo de ROM** (`.smc`, `.sfc`, `.bin`, `.gen`, `.md`, `.zip`) sobre la ventana. La ROM se carga 100% en la memoria de tu navegador y nunca se sube a internet.
+3. Conecta tu mando USB o Bluetooth para jugar con mando físico en el navegador mediante la *Web Gamepad API*.
+
+---
+
+### 🔄 Controles y Navegación en los Menús (Común a Desktop)
+- **`[TAB]`** (o los gatillos **`[L]` / `[R]`** en mando): Alternar consola activa (Super Nintendo <-> Sega Mega Drive).
+- **`[A]` o `[ENTER]`**: Iniciar el juego seleccionado.
+- **`[X]` o `[M]`**: Abrir el **Menú Propio del Juego** (asignación de carátulas en múltiples formatos, copias de seguridad de partidas `.srm` y estadísticas).
+- **`[C]`**: Abrir la configuración interactiva de mandos con diagrama retro.
+- **`[S]`**: Menú de Ajustes generales (filtro CRT scanlines, volumen, etc.).
+- **`[H]` o `[F1]`**: Guía rápida y ayuda en pantalla.
+
+---
+
+## 🕹️ Atajos Durante la Partida
+
+* **`[F5]`**: Guardado Rápido instantáneo (*Quick Save*).
+* **`[F7]`**: Carga Rápida instantánea (*Quick Load*).
+* **`[F11]`**: Alternar Pantalla Completa.
+* **`[ESC]`**: **Menú de Pausa retro integrado** (Continuar, Guardar, Cargar, Reiniciar consola o Volver al catálogo).
 
 ---
 
 ## 🛠️ Recompilación de los Núcleos C (Opcional)
 
-Si descargas el código fuente o realizas cambios en los motores nativos C (`snes/` o `megadrive_bridge.c`), puedes compilar ambos núcleos compartidos ejecutando:
-```bash
-make -C src/emulator_core
-```
+* **En Linux:**
+  ```bash
+  make -C src/emulator_core
+  ```
+  *Compila `libretrosnes.so` y `libmegadrive_bridge.so`.*
+* **En Windows:**
+  Ejecuta con doble clic el script `windows\compile_cores.bat` (requiere tener instalado MinGW/GCC o MSYS2).  
+  *Compila `libretrosnes.dll` y `libmegadrive_bridge.dll`.*
 
 ---
 

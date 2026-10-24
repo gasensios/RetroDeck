@@ -9,6 +9,7 @@ import pygame
 from pathlib import Path
 from typing import Optional
 from src.ui.retro_theme import PALETTE
+from src.core.platform_utils import open_folder
 
 class SettingsView:
     def __init__(self, theme, sound_manager, config_manager, rom_manager, emulator_runner, system_manager=None):
@@ -136,7 +137,7 @@ class SettingsView:
         if idx == 6:
             path = Path(self.config.get("paths", "roms")).resolve()
             try:
-                subprocess.Popen(["xdg-open", str(path)])
+                open_folder(path)
                 self._notify("Abriendo carpeta de ROMs...")
                 self.sound.play("select")
             except Exception as e:
@@ -146,7 +147,7 @@ class SettingsView:
         elif idx == 7:
             path = Path(self.config.get("paths", "saves")).resolve()
             try:
-                subprocess.Popen(["xdg-open", str(path)])
+                open_folder(path)
                 self._notify("Abriendo carpeta de partidas...")
                 self.sound.play("select")
             except Exception as e:

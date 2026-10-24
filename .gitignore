@@ -39,11 +39,17 @@ __pycache__/
 *$py.class
 .pytest_cache/
 
-# 7. Binarios compilados compartidos (se generan con 'make -C src/emulator_core')
+# 7. Binarios compilados compartidos y ejecutables
 src/emulator_core/*.so
+src/emulator_core/*.dll
 *.so
+*.dll
+*.exe
 *.o
 *.a
+build/
+dist/
+*.spec
 
 # 8. Archivos del sistema operativo y del editor
 .DS_Store

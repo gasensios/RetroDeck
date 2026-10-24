@@ -1,6 +1,6 @@
 # 📘 Manual de Usuario y Funcionamiento Interno de RetroDeck
 
-¡Bienvenido a **RetroDeck**! Esta estación de emulación retro soporta de forma nativa **Super Nintendo (SNES)** y **Sega Mega Drive / Genesis** mediante motores propios en C y un frontend interactivo en Python/Pygame.
+¡Bienvenido a **RetroDeck**! Esta estación de emulación retro soporta de forma nativa **Super Nintendo (SNES)** y **Sega Mega Drive / Genesis** mediante motores propios en C, una interfaz gráfica interactiva en Python/Pygame y una versión web ligera para navegadores.
 
 ---
 
@@ -8,13 +8,13 @@
 
 1. [¿Qué es RetroDeck?](#1-qué-es-retrodeck)
 2. [Sistemas Soportados (SNES y Sega Mega Drive)](#2-sistemas-soportados-snes-y-sega-mega-drive)
-3. [Estructura de Carpetas Multi-Sistema](#3-estructura-de-carpetas-multi-sistema)
+3. [Estructura de Carpetas y Diferenciación](#3-estructura-de-carpetas-y-diferenciación)
 4. [Cómo Añadir y Gestionar Juegos](#4-cómo-añadir-y-gestionar-juegos)
-5. [Cómo Ejecutar y Cambiar de Sistema](#5-cómo-ejecutar-y-cambiar-de-sistema)
+5. [Guía Multi-Plataforma: Cómo Jugar en Linux, Windows y Web](#5-guía-multi-plataforma-cómo-jugar-en-linux-windows-y-web)
 6. [Menú Propio del Juego y Gestión de Carátulas](#6-menú-propio-del-juego-y-gestión-de-carátulas)
-7. [Controles y Configuración de Mandos](#7-controles-y-configuración-de-mandos)
+7. [Controles y Configuración de Mandos Multi-Consola](#7-controles-y-configuración-de-mandos-multi-consola)
 8. [Durante la Partida: Menú de Pausa y Savestates](#8-durante-la-partida-menú-de-pausa-y-savestates)
-9. [Arquitectura Interna de los Núcleos C](#9-arquitectura-interna-de-los-núcleos-c)
+9. [Arquitectura Interna y Abstracción de Plataformas](#9-arquitectura-interna-y-abstracción-de-plataformas)
 10. [Preguntas Frecuentes](#10-preguntas-frecuentes)
 11. [Versión WebAssembly en GitHub Pages](#11-versión-webassembly-en-github-pages)
 
@@ -22,9 +22,9 @@
 
 ## 1. ¿Qué es RetroDeck?
 
-**RetroDeck** es una plataforma de juegos retro para **Linux** que reúne dos consolas históricas de 16 bits en una sola aplicación con motores nativos propios y una interfaz artística retro inspirada en los salones recreativos y consolas de los años 80 y 90:
-* **Super Nintendo**: Núcleo C nativo (`libretrosnes.so`).
-* **Sega Mega Drive / Genesis**: Núcleo C nativo (`libmegadrive_bridge.so`).
+**RetroDeck** es una plataforma de juegos retro disponible para **Linux, Windows y Web** que reúne dos consolas históricas de 16 bits en una sola aplicación con motores nativos propios y una interfaz artística retro inspirada en los salones recreativos y consolas de los años 80 y 90:
+* **Super Nintendo**: Núcleo C nativo (`libretrosnes.so` en Linux, `libretrosnes.dll` en Windows).
+* **Sega Mega Drive / Genesis**: Núcleo C nativo (`libmegadrive_bridge.so` en Linux, `libmegadrive_bridge.dll` en Windows).
 * **Estética de los 80/90**: Cuadrícula neón en perspectiva 3D (estilo Mode 7 / synthwave) con cielo estrellado centelleante, chasis de máquinas arcade con tornillos remachados, distintivos originales (diamante de 4 colores de Super Famicom y sello ovalado dorado de 16-BIT de Mega Drive), LEDs de hardware luminosos, ranura iluminada para cartuchos 3D y simulación de pantalla CRT con cristal curvado.
 
 ---
@@ -38,19 +38,28 @@
 
 ---
 
-## 3. Estructura de Carpetas Multi-Sistema
+## 3. Estructura de Carpetas y Diferenciación
+
+El repositorio está claramente separado para permitir jugar tanto en Linux, en Windows o en la web:
 
 ```text
 Retro_Games/
 │
-├── RetroDeck.sh               # 🚀 Script ejecutable del emulador
+├── RetroDeck.sh               # 🐧 Lanzador ejecutable para Linux
 ├── RetroDeck.desktop          # 🖥️ Lanzador para el escritorio Linux
+├── RetroDeck.bat              # 🪟 Lanzador automático para Windows (doble clic)
+├── RetroDeck.vbs              # 🪟 Lanzador silencioso sin consola para Windows
 ├── TUTORIAL.md                # 📘 Este manual de instrucciones
 ├── README.md                  # 📄 Resumen rápido y aviso legal del proyecto
 ├── .gitignore                 # 🛡️ Protección para Git (ignora ROMs, saves y binarios)
 │
+├── windows/                   # 🪟 Utilidades exclusivas para Windows
+│   ├── README.md              # 📖 Guía oficial de uso en Windows
+│   ├── compile_cores.bat      # ⚙️ Script de compilación de DLLs con MinGW/GCC
+│   └── build_exe.bat          # 📦 Generador de ejecutable portátil RetroDeck.exe
+│
 ├── docs/                      # 🌐 Versión WebAssembly para GitHub Pages
-│   ├── index.html             # 🕹️ Interfaz web del emulador
+│   ├── index.html             # 🕹️ Interfaz web del emulador arcade
 │   ├── style.css              # 🎨 Estética synthwave y CRT web
 │   ├── retrodeck-web.js       # ⚡ Motor WebAssembly y Gamepad API
 │   └── assets/                # 📦 Demos homebrew y fuentes web
@@ -60,8 +69,8 @@ Retro_Games/
 │   └── megadrive/             # 📂 ROMs de Sega Mega Drive (.bin, .md, .gen)
 │
 ├── boxart/
-│   ├── snes/                  # 🖼️ Carátulas SNES (.png o .jpg)
-│   └── megadrive/             # 🖼️ Carátulas Mega Drive (.png o .jpg)
+│   ├── snes/                  # 🖼️ Carátulas SNES (.png, .jpg, .webp)
+│   └── megadrive/             # 🖼️ Carátulas Mega Drive (.png, .jpg, .webp)
 │
 ├── saves/
 │   ├── snes/                  # 💾 Partidas de batería SNES (.srm)
@@ -75,35 +84,71 @@ Retro_Games/
 │   ├── settings.json          # ⚙️ Mapeo de teclas, volumen, pantalla y preferencias
 │   └── gamelist_cache.json    # 🗃️ Registro de favoritos y estadísticas
 │
-├── src/                       # 💻 Código fuente
+├── src/                       # 💻 Código fuente multiplataforma
 │   ├── emulator_core/         # 🧠 Núcleos nativos C (SNES y Mega Drive)
 │   ├── ui/                    # 🎨 Menús, visor de cartuchos, controles y juego
-│   └── core/                  # 🎛️ Gestores de entrada, sistemas y sonido
+│   └── core/                  # 🎛️ Gestores de entrada, plataformas y sonido
 │
 └── assets/                    # 📦 Tipografía pixel, sonidos, iconos y capturas
-    └── screenshots/           # 📸 Capturas de pantalla de la interfaz
+    └── screenshots/           # 📸 Capturas de pantalla oficiales
 ```
 
 ---
 
 ## 4. Cómo Añadir y Gestionar Juegos
 
-1. Copia tus juegos a la carpeta correspondiente:
+1. Copia tus juegos a la carpeta correspondiente de tu sistema:
    * Para SNES: `roms/snes/`
    * Para Mega Drive: `roms/megadrive/`
-2. Si tienes carátulas, colócalas en `boxart/snes/` o `boxart/megadrive/` con el mismo nombre que la ROM (por ejemplo, `Sonic.bin` -> `Sonic.png`).
-3. **Reescanear en caliente:** Si copias nuevos juegos con el emulador ya en ejecución, puedes reescanear la biblioteca al instante desde el menú de Ajustes (**`[S]`** -> Opción *"Reescanear catálogo de ROMs"*) o pulsando **`[A]`** en el catálogo de juegos.
+2. Si tienes carátulas, colócalas en `boxart/snes/` o `boxart/megadrive/` con el mismo nombre que la ROM (por ejemplo, `Sonic.bin` -> `Sonic.png`), o asígnalas interactivamente desde el **Menú del Juego (`[X]` o `[M]`)**.
+3. **Reescanear en caliente:** Si copias nuevos juegos con el emulador ya en ejecución, puedes reescanear la biblioteca al instante desde el menú de Ajustes (**`[S]`** -> Opción *"Reescanear catálogo de ROMs"*).
 
 ---
 
-## 5. Cómo Ejecutar y Cambiar de Sistema
+## 5. Guía Multi-Plataforma: Cómo Jugar en Linux, Windows y Web
 
-Ejecuta el programa:
-```bash
-./RetroDeck.sh
-```
+### 🐧 5.1. Cómo Jugar en Linux (Nativo)
 
-### 🔄 Alternar entre Super Nintendo y Mega Drive
+1. Abre la terminal en el directorio del proyecto y dale permisos de ejecución:
+   ```bash
+   chmod +x RetroDeck.sh
+   ```
+2. Ejecuta el emulador:
+   ```bash
+   ./RetroDeck.sh
+   ```
+   *El script se encarga de crear el entorno virtual aislado `.venv` e instalar las dependencias (`pygame`) automáticamente.*
+3. Para integrar un acceso directo en tu escritorio o menú de aplicaciones:
+   ```bash
+   cp RetroDeck.desktop ~/.local/share/applications/
+   ```
+
+---
+
+### 🪟 5.2. Cómo Jugar en Windows (Nativo)
+
+1. **Instalar Python:** Instala [Python 3.10 o superior](https://www.python.org/downloads/) asegurándote de marcar la casilla **`[X] Add python.exe to PATH`** en el instalador.
+2. **Ejecución con doble clic:**
+   * **`RetroDeck.bat`**: Haz doble clic para arrancar. Si es la primera vez, preparará automáticamente el entorno virtual `.venv` y descargará las librerías necesarias.
+   * **`RetroDeck.vbs`**: Haz doble clic para iniciar la aplicación en segundo plano de forma silenciosa (sin que quede la ventana negra de CMD abierta).
+3. **Mandos en Windows:** Conecta cualquier mando USB o Bluetooth de **Xbox** (XInput) o **PlayStation** (DirectInput con DS4Windows/Steam); se detecta automáticamente al iniciar.
+4. **Empaquetar como `.exe`:** Haz doble clic en `windows\build_exe.bat` para compilar un ejecutable independiente `dist\RetroDeck\RetroDeck.exe` que puedes llevar en un pendrive sin necesitar Python.
+
+---
+
+### 🌐 5.3. Cómo Jugar en la Web (GitHub Pages / WebAssembly)
+
+No requiere ninguna instalación en tu equipo:
+
+1. Entra a: **`https://gasensios.github.io/RetroDeck/`**
+2. **Jugar al instante:**
+   * Haz clic sobre las demos integradas (**Astrohawk** o **BombX**) para jugar de inmediato.
+   * O **arrastra cualquier ROM** (`.smc`, `.sfc`, `.bin`, `.gen`, `.md`) desde tu ordenador a la ventana del navegador. La ROM se carga en memoria y nunca se transmite a internet.
+3. Puedes conectar tu mando USB o Bluetooth al ordenador y el navegador lo detectará mediante la *Web Gamepad API*.
+
+---
+
+### 🔄 Alternar entre Super Nintendo y Mega Drive en los Menús
 - Pulsa la tecla **`[TAB]`** o pulsa los botones superiores **`[L]` / `[R]`** en tu mando.
 - También puedes hacer clic sobre las pestañas **`[★ SNES]`** y **`[★ MEGADRIVE]`** en la parte superior derecha.
 - Toda la interfaz cambiará de forma instantánea de colores temáticos, cartucho (gris SNES o negro Mega Drive) y lista de juegos.
@@ -122,14 +167,14 @@ Cada juego dispone de un **Menú Propio de Configuración** con estética de má
 ### 🎨 Opciones disponibles en el Menú:
 1. **`>> INICIAR JUEGO <<`**: Lanza la ROM de inmediato.
 2. **`Favorito: [★ SI / No]`**: Marca el juego para que aparezca con estrella dorada y al inicio del catálogo.
-3. **`Asignar Carátula (Selector de Archivos)`**: Abre un explorador de archivos nativo de Linux (`zenity`) para elegir cualquier imagen de tu disco duro.
+3. **`Asignar Carátula (Selector de Archivos)`**: Abre un explorador de archivos nativo del sistema operativo (Zenity/KDialog en Linux, diálogo nativo de Windows o macOS) para elegir cualquier imagen de tu disco duro.
    * **Formatos soportados:** `.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`.
    * La carátula se vincula automáticamente al juego y se renderiza en tiempo real sobre la pegatina del cartucho 3D.
-4. **`Abrir Carpeta de Carátulas (boxart/)`**: Abre la carpeta `boxart/snes/` o `boxart/megadrive/` en tu gestor de ventanas Linux para arrastrar imágenes por lotes.
+4. **`Abrir Carpeta de Carátulas (boxart/)`**: Abre la carpeta `boxart/snes/` o `boxart/megadrive/` en tu gestor de archivos para arrastrar imágenes por lotes.
 5. **`Quitar Carátula Personalizada`**: Restaura el cartucho a su diseño original con tipografía serigrafiada retro.
 6. **`Crear Copia de Seguridad (Backup Partida)`**: Crea un duplicado con fecha y hora de la pila de guardado (`.srm`), ideal antes de un combate difícil o para conservar partidas históricas.
 7. **`Borrar Partida de Batería (Reiniciar Save)`**: Elimina el `.srm` si deseas comenzar una partida completamente desde cero.
-8. **`Abrir Carpeta de la ROM (roms/)`**: Abre la ubicación física de la ROM en el sistema operativo.
+8. **`Abrir Carpeta de la ROM (roms/)`**: Abre la ubicación física de la ROM en el explorador de archivos del sistema.
 9. **`Resetear Estadísticas de Juego`**: Restablece el contador de partidas jugadas de este título.
 
 ---
@@ -198,11 +243,12 @@ Tanto en Super Nintendo como en Sega Mega Drive:
 
 ---
 
-## 9. Arquitectura Interna de los Núcleos C
+## 9. Arquitectura Interna y Abstracción de Plataformas
 
-RetroDeck está construido para maximizar el rendimiento y la fidelidad sin requerir binarios externos pesados:
-* **Núcleo SNES (`libretrosnes.so`)**: Compilado en C nativo. Emula la CPU 65816, la PPU con todos los modos gráficos (incluido Mode 7 con rotación y zoom) y el procesador de sonido SPC700 con DSP de 8 canales. Proporciona una superficie de 512x480 a 60 FPS.
-* **Núcleo Mega Drive (`libmegadrive_bridge.so`)**: Compilado en C nativo con Genesis Plus GX. Emula la CPU Motorola 68000 a 7.6 MHz, el chip de audio dual Yamaha YM2612 (FM) + TI SN76489 (PSG) y el procesador VDP con planos de scroll A y B.
+RetroDeck está construido para maximizar el rendimiento y la fidelidad mediante un diseño desacoplado:
+* **Núcleo SNES (`libretrosnes.so` / `libretrosnes.dll`)**: Compilado en C nativo. Emula la CPU 65816, la PPU con todos los modos gráficos (incluido Mode 7 con rotación y zoom) y el procesador de sonido SPC700 con DSP de 8 canales. Proporciona una superficie de 512x480 a 60 FPS.
+* **Núcleo Mega Drive (`libmegadrive_bridge.so` / `libmegadrive_bridge.dll`)**: Compilado en C nativo con Genesis Plus GX. Emula la CPU Motorola 68000 a 7.6 MHz, el chip de audio dual Yamaha YM2612 (FM) + TI SN76489 (PSG) y el procesador VDP con planos de scroll A y B.
+* **Módulo de Abstracción Multiplataforma (`src/core/platform_utils.py`)**: Detecta automáticamente el sistema operativo (Windows, Linux, macOS) para resolver diálogos nativos de archivos, apertura de carpetas en el explorador del sistema y resolución de nombres de librerías dinámicas (`.dll` vs `.so`).
 * **Integración Pygame con Ctypes**: Puente de datos de alta velocidad en memoria compartida, permitiendo post-procesado CRT y scanlines en tiempo real.
 
 ---
@@ -210,7 +256,7 @@ RetroDeck está construido para maximizar el rendimiento y la fidelidad sin requ
 ## 10. Preguntas Frecuentes
 
 **¿Puedo usar imágenes `.webp` o `.jpg` para las carátulas?**  
-Sí, el menú de cada juego soporta `.png`, `.jpg`, `.jpeg`, `.webp` y `.bmp`. Además puedes asignarlas seleccionándolas con el diálogo de archivos (`zenity`) o colocándolas en `boxart/<sistema>/`.
+Sí, el menú de cada juego soporta `.png`, `.jpg`, `.jpeg`, `.webp` y `.bmp`. Además puedes asignarlas seleccionándolas con el diálogo nativo de archivos del sistema operativo o colocándolas en `boxart/<sistema>/`.
 
 **¿Cómo restauro los controles originales si me equivoco al mapear?**  
 Entra a Controles con **`[C]`**, elige la consola y el dispositivo (Teclado o Mando) y pulsa **`[X]`** o **`[S]`** para restaurar los valores por defecto.

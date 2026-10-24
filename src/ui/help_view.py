@@ -55,6 +55,7 @@ class HelpView:
             ("- saves/snes/ & megadrive/", "Partidas guardadas de bateria (.srm)"),
             ("- states/snes/ & megadrive/", "Puntos de guardado rapido (Savestates)"),
             ("- config/", "Ajustes, favoritos y mapeo de controles"),
+            ("- Multiplataforma:", "RetroDeck.sh (Linux), RetroDeck.bat (Win)"),
             ("- docs/ (WebAssembly)", "Edicion web para jugar en GitHub Pages"),
             ("", ""),
             ("[PAD] COMPATIBILIDAD CON MANDOS", ""),

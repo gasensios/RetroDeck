@@ -10,6 +10,7 @@ from typing import Optional
 from src.ui.retro_theme import PALETTE
 from src.emulator_core.snes_player import SnesPlayer
 from src.emulator_core.megadrive_player import MegaDrivePlayer
+from src.core.platform_utils import get_core_library_path
 
 class GameplayView:
     def __init__(self, theme, config_manager, input_manager, sound_manager):
@@ -19,8 +20,9 @@ class GameplayView:
         self.sound = sound_manager
         
         project_root = Path(__file__).resolve().parent.parent.parent
-        snes_lib = project_root / "src" / "emulator_core" / "libretrosnes.so"
-        md_lib = project_root / "src" / "emulator_core" / "libmegadrive_bridge.so"
+        core_dir = project_root / "src" / "emulator_core"
+        snes_lib = get_core_library_path(core_dir, "retrosnes")
+        md_lib = get_core_library_path(core_dir, "megadrive_bridge")
 
         self.snes_player = SnesPlayer(snes_lib)
         self.md_player = MegaDrivePlayer(md_lib)
